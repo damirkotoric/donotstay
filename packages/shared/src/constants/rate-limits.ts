@@ -1,0 +1,3 @@
+export const FREE_TIER_LIMIT = 2;
+export const FREE_TIER_WINDOW_HOURS = 3;
+export const FREE_TIER_WINDOW_MS = FREE_TIER_WINDOW_HOURS * 60 * 60 * 1000;

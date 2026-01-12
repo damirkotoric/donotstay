@@ -1,0 +1,2 @@
+export const VERDICT_CACHE_TTL_DAYS = 7;
+export const VERDICT_CACHE_TTL_MS = VERDICT_CACHE_TTL_DAYS * 24 * 60 * 60 * 1000;
