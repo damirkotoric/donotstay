@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@theme {
+  /* Primary colors */
+  --color-primary: #E53935;
+  --color-primary-dark: #C62828;
+
+  /* Verdict colors */
+  --color-verdict-stay: #10B981;
+  --color-verdict-depends: #F59E0B;
+  --color-verdict-donotstay: #EF4444;
+
+  /* Font family */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Pointer cursor for interactive elements */
+button,
+[type="button"],
+[type="submit"],
+[type="reset"],
+[role="button"],
+summary {
+  cursor: pointer;
+}
+
+/* Custom button styles */
+@layer components {
+  .btn-primary {
+    @apply bg-gradient-to-r from-primary to-primary-dark text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg;
+  }
+
+  .btn-secondary {
+    @apply border-2 border-primary text-primary hover:bg-primary hover:text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200;
+  }
+}

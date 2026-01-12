@@ -1,4 +1,4 @@
-export type Verdict = 'Stay' | 'It depends' | 'Do Not Stay';
+export type Verdict = 'Stay' | 'Questionable' | 'Do Not Stay';
 
 export type Severity = 'critical' | 'high' | 'medium' | 'low';
 

@@ -58,7 +58,7 @@ export function updateBadge(update: BadgeUpdate): void {
     case 'depends':
       badgeElement.innerHTML = `
         <span class="icon">&#8226;</span>
-        <span class="text">It depends</span>
+        <span class="text">Questionable</span>
         ${update.confidence ? `<span class="confidence">${update.confidence}%</span>` : ''}
       `;
       break;

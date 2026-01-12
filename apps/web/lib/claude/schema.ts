@@ -8,7 +8,7 @@ export const RedFlagSchema = z.object({
 });
 
 export const VerdictResponseSchema = z.object({
-  verdict: z.enum(['Stay', 'It depends', 'Do Not Stay']),
+  verdict: z.enum(['Stay', 'Questionable', 'Do Not Stay']),
   confidence: z.number().min(0).max(100),
   one_liner: z.string(),
   red_flags: z.array(RedFlagSchema),

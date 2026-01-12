@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS public.verdicts (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   hotel_id TEXT NOT NULL UNIQUE,
   platform TEXT DEFAULT 'booking.com',
-  verdict TEXT NOT NULL CHECK (verdict IN ('Stay', 'It depends', 'Do Not Stay')),
+  verdict TEXT NOT NULL CHECK (verdict IN ('Stay', 'Questionable', 'Do Not Stay')),
   confidence INT NOT NULL CHECK (confidence >= 0 AND confidence <= 100),
   one_liner TEXT NOT NULL,
   red_flags JSONB DEFAULT '[]'::jsonb,

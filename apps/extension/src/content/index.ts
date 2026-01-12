@@ -82,7 +82,7 @@ function getVerdictState(verdict: string): BadgeState {
   switch (verdict) {
     case 'Stay':
       return 'stay';
-    case 'It depends':
+    case 'Questionable':
       return 'depends';
     case 'Do Not Stay':
       return 'do_not_stay';

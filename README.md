@@ -9,7 +9,7 @@ donotstay/
 ├── packages/
 │   └── shared/           # Shared types and utilities
 ├── apps/
-│   ├── api/              # Next.js API (Vercel)
+│   ├── web/              # Next.js web app + API (Vercel)
 │   └── extension/        # Chrome Extension (Manifest V3)
 └── supabase/
     └── migrations/       # Database schema
@@ -43,10 +43,10 @@ pnpm install
 ### 3. Configure Environment Variables
 
 ```bash
-cp apps/api/.env.local.example apps/api/.env.local
+cp apps/web/.env.local.example apps/web/.env.local
 ```
 
-Edit `apps/api/.env.local` with your credentials:
+Edit `apps/web/.env.local` with your credentials:
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
@@ -71,8 +71,8 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 ### 5. Run Development Servers
 
 ```bash
-# Run API
-pnpm dev:api
+# Run web app
+pnpm dev:web
 
 # Build extension (in another terminal)
 pnpm dev:extension
@@ -87,10 +87,10 @@ pnpm dev:extension
 
 ## Development
 
-### API (Next.js)
+### Web (Next.js)
 
 ```bash
-cd apps/api
+cd apps/web
 pnpm dev
 ```
 
@@ -126,10 +126,10 @@ pnpm dev
 
 ## Deployment
 
-### API (Vercel)
+### Web (Vercel)
 
 ```bash
-cd apps/api
+cd apps/web
 vercel deploy
 ```
 
@@ -145,11 +145,11 @@ vercel deploy
 
 ## Features
 
-- **Verdict System**: Stay / It depends / Do Not Stay
+- **Verdict System**: Stay / Questionable / Do Not Stay
 - **Confidence Score**: 0-100 based on review analysis
 - **Red Flags**: Critical issues with evidence
 - **Avoid If Personas**: Who should avoid this hotel
-- **Rate Limiting**: Free tier (2 checks/3 hours), Pro (unlimited)
+- **Rate Limiting**: Free tier (2 checks/hour), Pro (unlimited)
 - **Caching**: 7-day verdict cache to reduce API costs
 
 ## Tech Stack

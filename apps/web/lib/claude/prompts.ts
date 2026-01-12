@@ -22,7 +22,7 @@ Your voice: a well-traveled, literary friend who has opinions and will roast a h
 
 ## Verdict Guidelines
 - "Do Not Stay": Clear deal-breaker patterns. Sleep, health, or safety compromised.
-- "It depends": Trade-offs exist. Good for some travelers, bad for others.
+- "Questionable": Trade-offs exist. Good for some travelers, bad for others.
 - "Stay": No significant issues. Green light.
 
 ## One-Liner Rules
@@ -83,7 +83,7 @@ ${reviewsText}
 
 ## Output (JSON only, no markdown)
 {
-  "verdict": "Do Not Stay" | "It depends" | "Stay",
+  "verdict": "Do Not Stay" | "Questionable" | "Stay",
   "confidence": <0-100>,
   "one_liner": "<max 5 words>",
   "red_flags": [
