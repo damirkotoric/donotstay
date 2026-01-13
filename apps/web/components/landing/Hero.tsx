@@ -2,7 +2,7 @@
 
 import { siteConfig } from '@/lib/config';
 import { FlipWords } from '@/components/ui/flip-words';
-import { BookingLogo, AirbnbLogo, ExpediaLogo } from '@/components/logos';
+import { BookingLogo } from '@/components/logos';
 import { Button } from '@/components/ui/button';
 
 const rotatingWords = ['mold', 'thin walls', 'rude staff', 'noise', 'bedbugs', 'weak AC'];

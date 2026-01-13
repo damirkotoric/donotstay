@@ -1,4 +1,7 @@
 import { z } from 'zod';
+import type { Verdict } from '@donotstay/shared';
+
+const verdictValues = ['Stay', 'Questionable', 'Do Not Stay'] as const satisfies readonly Verdict[];
 
 export const RedFlagSchema = z.object({
   issue: z.string(),
@@ -8,7 +11,7 @@ export const RedFlagSchema = z.object({
 });
 
 export const VerdictResponseSchema = z.object({
-  verdict: z.enum(['Stay', 'Questionable', 'Do Not Stay']),
+  verdict: z.enum(verdictValues),
   confidence: z.number().min(0).max(100),
   one_liner: z.string(),
   red_flags: z.array(RedFlagSchema),
