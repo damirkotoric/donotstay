@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { List, X } from '@phosphor-icons/react';
 import { siteConfig } from '@/lib/config';
 import { Logo } from '@/components/Logo';
+import { Button } from '@/components/ui/button';
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -11,6 +12,7 @@ export function Navbar() {
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
+    handleScroll(); // Check initial scroll position on mount
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -42,39 +44,40 @@ export function Navbar() {
         <div
           className={`mx-auto max-w-[75rem] rounded-xl border px-4 transition-all duration-300 sm:px-6 ${
             isScrolled
-              ? 'border-gray-200/50 bg-white/80 shadow-lg backdrop-blur-md'
+              ? 'border-border/50 bg-background/80 shadow-lg backdrop-blur-md'
               : 'border-transparent bg-transparent'
           }`}
         >
           <div className="flex h-14 items-center justify-between">
             {/* Logo */}
             <a href="/" className="flex items-center gap-2">
-              <Logo size={32} />
-              <span className="text-xl font-bold text-gray-900">DoNotStay</span>
+              <Logo size={28} />
+              <span className="text-xl font-bold text-foreground">DoNotStay</span>
             </a>
 
             {/* Desktop Nav */}
             <div className="hidden items-center gap-8 md:flex">
               <a
                 href={siteConfig.links.howItWorks}
-                className="text-gray-600 transition-colors hover:text-gray-900"
+                className="text-foreground-secondary transition-colors hover:text-foreground font-medium"
               >
                 How it Works
               </a>
               <a
                 href={siteConfig.links.pricing}
-                className="text-gray-600 transition-colors hover:text-gray-900"
+                className="text-foreground-secondary transition-colors hover:text-foreground font-medium"
               >
                 Pricing
               </a>
-              <a
-                href={siteConfig.chromeWebStoreUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-primary py-2 px-4 text-sm"
-              >
-                Add to Chrome
-              </a>
+              <Button asChild>
+                <a
+                  href={siteConfig.chromeWebStoreUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Add to Chrome
+                </a>
+              </Button>
             </div>
 
             {/* Mobile menu button */}
@@ -83,7 +86,7 @@ export function Navbar() {
               onClick={() => setIsDrawerOpen(true)}
               aria-label="Open menu"
             >
-              <List size={24} weight="bold" className="text-gray-700" />
+              <List size={24} weight="bold" className="text-foreground-secondary" />
             </button>
           </div>
         </div>
@@ -92,54 +95,55 @@ export function Navbar() {
       {/* Mobile drawer overlay */}
       {isDrawerOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black/50 md:hidden"
+          className="fixed inset-0 z-50 bg-overlay md:hidden"
           onClick={() => setIsDrawerOpen(false)}
         />
       )}
 
       {/* Mobile drawer */}
       <div
-        className={`fixed top-0 right-0 z-50 h-full w-72 transform bg-white shadow-xl transition-transform duration-300 ease-in-out md:hidden ${
+        className={`fixed top-0 right-0 z-50 h-full w-72 transform bg-background shadow-xl transition-transform duration-300 ease-in-out md:hidden ${
           isDrawerOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         <div className="flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-2">
             <Logo size={28} />
-            <span className="text-lg font-bold text-gray-900">DoNotStay</span>
+            <span className="text-lg font-bold text-foreground">DoNotStay</span>
           </div>
           <button
             onClick={() => setIsDrawerOpen(false)}
             className="p-2"
             aria-label="Close menu"
           >
-            <X size={24} weight="bold" className="text-gray-700" />
+            <X size={24} weight="bold" className="text-foreground-secondary" />
           </button>
         </div>
         <div className="flex flex-col gap-4 px-4 py-6">
           <a
             href={siteConfig.links.howItWorks}
-            className="text-lg text-gray-600 transition-colors hover:text-gray-900"
+            className="text-lg font-semibold text-foreground-secondary transition-colors hover:text-foreground"
             onClick={() => setIsDrawerOpen(false)}
           >
             How it Works
           </a>
           <a
             href={siteConfig.links.pricing}
-            className="text-lg text-gray-600 transition-colors hover:text-gray-900"
+            className="text-lg font-medium text-foreground-secondary transition-colors hover:text-foreground"
             onClick={() => setIsDrawerOpen(false)}
           >
             Pricing
           </a>
-          <a
-            href={siteConfig.chromeWebStoreUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-primary mt-4 text-center"
-            onClick={() => setIsDrawerOpen(false)}
-          >
-            Add to Chrome
-          </a>
+          <Button className="mt-4" asChild>
+            <a
+              href={siteConfig.chromeWebStoreUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setIsDrawerOpen(false)}
+            >
+              Add to Chrome
+            </a>
+          </Button>
         </div>
       </div>
     </>

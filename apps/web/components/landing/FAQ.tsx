@@ -39,10 +39,10 @@ export function FAQ() {
   };
 
   return (
-    <section id="faq" className="px-4 py-20 sm:px-6 lg:px-8">
+    <section id="faq" className="px-4 py-30 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-3xl">
         <div className="mb-16 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">
+          <h2 className="text-3xl font-bold text-foreground sm:text-4xl">
             Frequently Asked Questions
           </h2>
         </div>
@@ -51,20 +51,20 @@ export function FAQ() {
           {faqs.map((faq, index) => (
             <div
               key={index}
-              className="overflow-hidden rounded-xl border border-gray-200 bg-white"
+              className="overflow-hidden rounded-xl border border-border bg-background"
             >
               <button
-                className="flex w-full items-center justify-between p-6 text-left transition-colors hover:bg-gray-50"
+                className="flex w-full items-center justify-between p-6 text-left transition-colors hover:bg-background-subtle"
                 onClick={() => toggleFAQ(index)}
                 aria-expanded={openIndex === index}
               >
-                <span className="font-semibold text-gray-900">
+                <span className="font-semibold text-foreground">
                   {faq.question}
                 </span>
                 <CaretDown
                   size={20}
                   weight="bold"
-                  className={`flex-shrink-0 text-gray-500 transition-transform duration-200 ${
+                  className={`flex-shrink-0 text-foreground-muted transition-transform duration-200 ${
                     openIndex === index ? 'rotate-180' : ''
                   }`}
                 />
@@ -74,7 +74,7 @@ export function FAQ() {
                   openIndex === index ? 'max-h-96' : 'max-h-0'
                 }`}
               >
-                <div className="px-6 pb-6 text-gray-600">{faq.answer}</div>
+                <div className="px-6 pb-6 text-foreground-secondary">{faq.answer}</div>
               </div>
             </div>
           ))}

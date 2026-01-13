@@ -1,7 +1,6 @@
 import {
   Navbar,
   Hero,
-  TrustBar,
   HowItWorks,
   VerdictExplainer,
   Features,
@@ -17,7 +16,6 @@ export default function Home() {
       <Navbar />
       <main>
         <Hero />
-        <TrustBar />
         <HowItWorks />
         <VerdictExplainer />
         <Features />

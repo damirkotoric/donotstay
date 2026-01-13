@@ -2,13 +2,14 @@
 
 import { Check } from '@phosphor-icons/react';
 import { siteConfig } from '@/lib/config';
+import { Button } from '@/components/ui/button';
 
 const plans = [
   {
     name: 'Free',
     price: '$0',
     period: 'forever',
-    description: 'Perfect for occasional travelers',
+    description: 'For casual trips',
     features: [
       `${siteConfig.pricing.free.checksPerWindow} checks per ${siteConfig.pricing.free.windowHours === 1 ? 'hour' : `${siteConfig.pricing.free.windowHours} hours`}`,
       'Verdict + confidence score',
@@ -26,7 +27,7 @@ const plans = [
       'Unlimited checks',
       'Full red flag breakdown',
       'All personas + evidence',
-      'Follow-up questions (coming soon)',
+      'Follow-up questions (coming next)',
       `Annual: $${siteConfig.pricing.pro.annualPrice}/year (save 17%)`,
     ],
     cta: 'Upgrade to Pro',
@@ -36,35 +37,35 @@ const plans = [
 
 export function Pricing() {
   return (
-    <section id="pricing" className="bg-gray-50 px-4 py-20 sm:px-6 lg:px-8">
+    <section id="pricing" className="bg-background-subtle px-4 py-30 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl">
         <div className="mb-16 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">
+          <h2 className="text-3xl font-bold text-foreground sm:text-4xl">
             Simple Pricing
           </h2>
-          <p className="mt-4 text-xl text-gray-600">
-            Start free, upgrade when you need more
+          <p className="mt-4 text-xl text-foreground-secondary">
+            Start free, upgrade when you need more.
           </p>
         </div>
 
-        <div className="grid items-start gap-8 md:grid-cols-2">
+        <div className="grid items-center gap-8 md:grid-cols-2">
           {plans.map((plan, index) => (
             <div
               key={index}
               className={`rounded-2xl p-8 ${
                 plan.highlighted
-                  ? 'relative scale-105 bg-gradient-to-br from-primary to-primary-dark text-white shadow-xl ring-4 ring-primary/20'
-                  : 'border border-gray-200 bg-white'
+                  ? 'relative bg-gradient-to-br from-primary to-primary-dark text-white shadow-xl ring-4 ring-primary/20'
+                  : 'border border-border bg-background'
               }`}
             >
               {plan.highlighted && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-white px-4 py-1 text-sm font-semibold text-primary shadow-md">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-background px-4 py-1 text-sm font-semibold text-primary shadow-md">
                   Most Popular
                 </div>
               )}
               <h3
                 className={`text-xl font-semibold ${
-                  plan.highlighted ? 'text-white' : 'text-gray-900'
+                  plan.highlighted ? 'text-white' : 'text-foreground'
                 }`}
               >
                 {plan.name}
@@ -73,7 +74,7 @@ export function Pricing() {
                 <span className="text-4xl font-bold">{plan.price}</span>
                 <span
                   className={`ml-1 ${
-                    plan.highlighted ? 'text-white/80' : 'text-gray-500'
+                    plan.highlighted ? 'text-white/80' : 'text-foreground-muted'
                   }`}
                 >
                   {plan.period}
@@ -81,7 +82,7 @@ export function Pricing() {
               </div>
               <p
                 className={`mt-2 ${
-                  plan.highlighted ? 'text-white/80' : 'text-gray-600'
+                  plan.highlighted ? 'text-white/80' : 'text-foreground-secondary'
                 }`}
               >
                 {plan.description}
@@ -99,7 +100,7 @@ export function Pricing() {
                     />
                     <span
                       className={
-                        plan.highlighted ? 'text-white/90' : 'text-gray-600'
+                        plan.highlighted ? 'text-white/90' : 'text-foreground-secondary'
                       }
                     >
                       {feature}
@@ -108,25 +109,22 @@ export function Pricing() {
                 ))}
               </ul>
 
-              <a
-                href={siteConfig.chromeWebStoreUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`mt-8 block rounded-lg py-3 px-6 text-center font-semibold transition-all ${
-                  plan.highlighted
-                    ? 'bg-white text-primary hover:bg-gray-100'
-                    : 'bg-gradient-to-r from-primary to-primary-dark text-white hover:scale-105 hover:shadow-lg'
-                }`}
+              <Button
+                variant={plan.highlighted ? 'secondary' : 'default'}
+                className="mt-8 w-full"
+                asChild
               >
-                {plan.cta}
-              </a>
+                <a
+                  href={siteConfig.chromeWebStoreUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {plan.cta}
+                </a>
+              </Button>
             </div>
           ))}
         </div>
-
-        <p className="mt-8 text-center text-sm text-gray-500">
-          Add to Chrome, upgrade anytime from the extension
-        </p>
       </div>
     </section>
   );

@@ -2,7 +2,7 @@
 
 import {
   WarningCircle,
-  Users,
+  Quotes,
   ChartBar,
   Lightning,
   ShieldCheck,
@@ -16,11 +16,17 @@ const features = [
     description:
       'Identifies critical issues like cleanliness problems, noise, or hidden fees.',
   },
+  // {
+  //   icon: Users,
+  //   title: '"Avoid if you are..." Personas',
+  //   description:
+  //     'Know if this hotel suits families, business travelers, or couples.',
+  // },
   {
-    icon: Users,
-    title: '"Avoid if you are..." Personas',
+    icon: Quotes,
+    title: 'Real Evidence',
     description:
-      'Know if this hotel suits families, business travelers, or couples.',
+      'Every red flag links back to actual guest quotes. No AI guesswork.',
   },
   {
     icon: ChartBar,
@@ -50,14 +56,14 @@ const features = [
 
 export function Features() {
   return (
-    <section className="px-4 py-20 sm:px-6 lg:px-8">
+    <section className="bg-background-subtle border border-t px-4 py-30 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
         <div className="mb-16 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">
-            What You Get
+          <h2 className="text-3xl font-bold text-foreground sm:text-4xl">
+            Ease of Mind
           </h2>
-          <p className="mt-4 text-xl text-gray-600">
-            Everything you need to make confident booking decisions
+          <p className="mt-4 text-xl text-foreground-secondary">
+            Make bookings with confidence.
           </p>
         </div>
 
@@ -70,16 +76,16 @@ export function Features() {
                 </div>
               </div>
               <div>
-                <h3 className="mb-1 font-semibold text-gray-900">
+                <h3 className="mb-1 font-semibold text-foreground">
                   {feature.title}
                 </h3>
-                <p className="text-sm text-gray-600">{feature.description}</p>
+                <p className="text-sm text-foreground-secondary">{feature.description}</p>
               </div>
             </div>
           ))}
         </div>
 
-        <p className="mt-12 text-center text-sm text-gray-500">
+        <p className="mt-12 text-center text-sm text-foreground-muted">
           Free users see verdict + top flags. Paid unlocks everything.
         </p>
       </div>
