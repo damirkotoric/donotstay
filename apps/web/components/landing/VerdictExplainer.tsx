@@ -48,7 +48,7 @@ export function VerdictExplainer() {
       <div className="mx-auto max-w-6xl">
         <div className="mb-16 text-center">
           <h2 className="text-3xl font-bold text-foreground sm:text-4xl">
-            Clear Verdicts, No Guesswork
+            No Guesswork
           </h2>
           <p className="mt-4 text-xl text-foreground-secondary">
             Our AI distills hundreds of reviews into one clear recommendation.

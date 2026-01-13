@@ -38,6 +38,17 @@ export function Navbar() {
     };
   }, [isDrawerOpen]);
 
+  const scrollToHowItWorks = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    const element = document.getElementById('how-it-works');
+    if (element) {
+      const offset = 100;
+      const elementPosition = element.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo({ top: elementPosition - offset, behavior: 'smooth' });
+    }
+    setIsDrawerOpen(false);
+  };
+
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-50 px-4 pt-4 sm:px-6 lg:px-8">
@@ -51,7 +62,7 @@ export function Navbar() {
           <div className="flex h-14 items-center justify-between">
             {/* Logo */}
             <a href="/" className="flex items-center gap-2">
-              <Logo size={28} />
+              <Logo size={28}  />
               <span className="text-xl font-bold text-foreground">DoNotStay</span>
             </a>
 
@@ -59,6 +70,7 @@ export function Navbar() {
             <div className="hidden items-center gap-8 md:flex">
               <a
                 href={siteConfig.links.howItWorks}
+                onClick={scrollToHowItWorks}
                 className="text-foreground-secondary transition-colors hover:text-foreground font-medium"
               >
                 How it Works
@@ -123,7 +135,7 @@ export function Navbar() {
           <a
             href={siteConfig.links.howItWorks}
             className="text-lg font-semibold text-foreground-secondary transition-colors hover:text-foreground"
-            onClick={() => setIsDrawerOpen(false)}
+            onClick={scrollToHowItWorks}
           >
             How it Works
           </a>

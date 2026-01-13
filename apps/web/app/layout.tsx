@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import { ThemeProvider } from '@/components/ThemeProvider';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -20,7 +21,6 @@ export const metadata: Metadata = {
     'avoid bad hotels',
   ],
   icons: {
-    icon: '/logo-donotstay.png',
     apple: '/logo-donotstay.png',
   },
   openGraph: {
@@ -37,8 +37,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.variable}>
-      <body className="font-sans antialiased">{children}</body>
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
+      <head>
+        <link
+          rel="icon"
+          href="/logo-donotstay.png"
+          media="(prefers-color-scheme: light)"
+        />
+        <link
+          rel="icon"
+          href="/logo-donotstay-white.png"
+          media="(prefers-color-scheme: dark)"
+        />
+      </head>
+      <body className="font-sans antialiased">
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }
