@@ -58,11 +58,11 @@ export function Pricing() {
                   : 'border border-border bg-background'
               }`}
             >
-              {plan.highlighted && (
+              {/* {plan.highlighted && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-background px-4 py-1 text-sm font-semibold text-primary shadow-md">
                   Most Popular
                 </div>
-              )}
+              )} */}
               <h3
                 className={`text-xl font-semibold ${
                   plan.highlighted ? 'text-white' : 'text-foreground'
@@ -110,8 +110,9 @@ export function Pricing() {
               </ul>
 
               <Button
-                variant={plan.highlighted ? 'secondary' : 'default'}
+                variant={plan.highlighted ? 'secondary' : 'outline'}
                 className="mt-8 w-full"
+                size="xl"
                 asChild
               >
                 <a

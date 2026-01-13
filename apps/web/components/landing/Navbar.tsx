@@ -69,7 +69,7 @@ export function Navbar() {
               >
                 Pricing
               </a>
-              <Button asChild>
+              <Button variant="default" asChild>
                 <a
                   href={siteConfig.chromeWebStoreUrl}
                   target="_blank"

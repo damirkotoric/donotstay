@@ -71,7 +71,7 @@ export function Features() {
           {features.map((feature, index) => (
             <div key={index} className="flex gap-4">
               <div className="flex-shrink-0">
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-foreground/5 text-foreground">
                   <feature.icon size={24} weight="bold" />
                 </div>
               </div>

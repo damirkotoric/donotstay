@@ -11,7 +11,7 @@ export function FinalCTA() {
         <p className="mt-4 text-xl">
           Join travelers who book with confidence.
         </p>
-        <Button variant="secondary" size="lg" className="mt-8" asChild>
+        <Button variant="outline" size="lg" className="mt-8" asChild>
           <a
             href={siteConfig.chromeWebStoreUrl}
             target="_blank"
