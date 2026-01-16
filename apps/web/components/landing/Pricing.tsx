@@ -43,7 +43,7 @@ export function Pricing() {
           <h2 className="text-3xl font-bold text-foreground sm:text-4xl">
             Simple Pricing
           </h2>
-          <p className="mt-4 text-xl text-foreground-secondary">
+          <p className="mt-4 text-xl text-muted-foreground">
             Start free, upgrade when you need more.
           </p>
         </div>
@@ -74,7 +74,7 @@ export function Pricing() {
                 <span className="text-4xl font-bold">{plan.price}</span>
                 <span
                   className={`ml-1 ${
-                    plan.highlighted ? 'text-white/80' : 'text-foreground-muted'
+                    plan.highlighted ? 'text-white/80' : 'text-muted-foreground'
                   }`}
                 >
                   {plan.period}
@@ -82,7 +82,7 @@ export function Pricing() {
               </div>
               <p
                 className={`mt-2 ${
-                  plan.highlighted ? 'text-white/80' : 'text-foreground-secondary'
+                  plan.highlighted ? 'text-white/80' : 'text-muted-foreground'
                 }`}
               >
                 {plan.description}
@@ -100,7 +100,7 @@ export function Pricing() {
                     />
                     <span
                       className={
-                        plan.highlighted ? 'text-white/90' : 'text-foreground-secondary'
+                        plan.highlighted ? 'text-white/90' : 'text-muted-foreground'
                       }
                     >
                       {feature}

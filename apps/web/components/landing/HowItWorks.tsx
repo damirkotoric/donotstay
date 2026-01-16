@@ -35,7 +35,7 @@ export function HowItWorks() {
                   <h3 className="mb-2 text-lg font-semibold text-foreground">
                     {step.title}
                   </h3>
-                  <p className="text-foreground-secondary text-sm">{step.description}</p>
+                  <p className="text-muted-foreground text-sm">{step.description}</p>
                 </div>
               </div>
               {index < steps.length - 1 && (

@@ -1,4 +1,3 @@
-import React from 'react';
 import type { RateLimitInfo } from '@donotstay/shared';
 
 interface UpgradePromptProps {
@@ -26,19 +25,22 @@ function UpgradePrompt({ rateLimit }: UpgradePromptProps) {
   };
 
   return (
-    <div className="upgrade-prompt">
-      <div className="upgrade-icon">&#128274;</div>
-      <div className="upgrade-title">Check Limit Reached</div>
-      <div className="upgrade-message">
+    <div className="flex flex-col items-center justify-center py-10 px-5 text-center">
+      <div className="text-5xl mb-4">&#128274;</div>
+      <div className="text-xl font-bold text-foreground mb-2">Check Limit Reached</div>
+      <div className="text-sm text-muted-foreground mb-6">
         You've used all your free hotel checks.
         <br />
         Upgrade to Pro for unlimited analysis.
       </div>
-      <button className="upgrade-btn" onClick={handleUpgrade}>
+      <button
+        className="bg-gradient-to-br from-violet-500 to-violet-600 text-white border-none py-3.5 px-7 rounded-xl text-[15px] font-semibold cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-violet-500/30"
+        onClick={handleUpgrade}
+      >
         Upgrade to Pro — $5/month
       </button>
       {rateLimit && (
-        <div className="reset-time">{getResetTime()}</div>
+        <div className="text-[13px] text-muted-foreground mt-4">{getResetTime()}</div>
       )}
     </div>
   );

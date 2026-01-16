@@ -20,11 +20,22 @@ export async function checkRateLimit(
     };
   }
 
-  const windowStart = new Date(Date.now() - FREE_TIER_WINDOW_MS);
+  const client = supabaseAdmin();
   const resetAt = new Date(Date.now() + FREE_TIER_WINDOW_MS);
 
+  // If Supabase not configured, allow unlimited (dev mode)
+  if (!client) {
+    return {
+      allowed: true,
+      remaining: FREE_TIER_LIMIT,
+      reset_at: resetAt.toISOString(),
+    };
+  }
+
+  const windowStart = new Date(Date.now() - FREE_TIER_WINDOW_MS);
+
   // Count recent checks
-  const { count, error } = await supabaseAdmin()
+  const { count, error } = await client
     .from('checks')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', userId)
@@ -51,7 +62,10 @@ export async function checkRateLimit(
 }
 
 export async function recordCheck(userId: string, hotelId: string): Promise<void> {
-  const { error } = await supabaseAdmin().from('checks').insert({
+  const client = supabaseAdmin();
+  if (!client) return; // Supabase not configured
+
+  const { error } = await client.from('checks').insert({
     user_id: userId,
     hotel_id: hotelId,
   });

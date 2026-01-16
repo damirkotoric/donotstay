@@ -3,7 +3,7 @@ import type { AnalyzeRequest, AnalyzeResponse, ApiError, HotelInfo, ScrapedRevie
 const API_URL = 'http://localhost:3000/api';
 
 interface AnalyzeMessage {
-  type: 'ANALYZE_HOTEL';
+  type: 'ANALYZE';
   hotel: HotelInfo;
   reviews: ScrapedReview[];
 }
@@ -20,9 +20,9 @@ type ExtensionMessage = AnalyzeMessage | GetAuthMessage | Message;
 
 // Listen for messages from content script
 chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendResponse) => {
-  if (message.type === 'ANALYZE_HOTEL') {
+  if (message.type === 'ANALYZE') {
     const analyzeMessage = message as AnalyzeMessage;
-    handleAnalyzeHotel(analyzeMessage.hotel, analyzeMessage.reviews)
+    handleAnalyze(analyzeMessage.hotel, analyzeMessage.reviews)
       .then(sendResponse)
       .catch((error) => {
         sendResponse({ error: error.message, code: 'UNKNOWN_ERROR' });
@@ -42,13 +42,14 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
   return false;
 });
 
-async function handleAnalyzeHotel(
-  hotel: HotelInfo,
-  reviews: ScrapedReview[]
-): Promise<AnalyzeResponse | ApiError> {
+/**
+ * Send reviews to analyze API
+ */
+async function handleAnalyze(hotel: HotelInfo, reviews: ScrapedReview[]): Promise<AnalyzeResponse | ApiError> {
   try {
-    const authToken = await getStoredToken();
+    console.log(`DoNotStay: Sending ${reviews.length} reviews for analysis`);
 
+    const authToken = await getStoredToken();
     const request: AnalyzeRequest = { hotel, reviews };
 
     const response = await fetch(`${API_URL}/analyze`, {
@@ -68,7 +69,7 @@ async function handleAnalyzeHotel(
 
     return data as AnalyzeResponse;
   } catch (error) {
-    console.error('Error analyzing hotel:', error);
+    console.error('DoNotStay: Error in analyze:', error);
     return {
       error: 'Failed to analyze hotel. Please try again.',
       code: 'NETWORK_ERROR',
@@ -99,7 +100,6 @@ async function getAuthStatus() {
     });
 
     if (!response.ok) {
-      // Token expired or invalid
       await chrome.storage.local.remove(['authToken']);
       return { authenticated: false, user: null };
     }
@@ -111,10 +111,9 @@ async function getAuthStatus() {
   }
 }
 
-// Handle extension icon click - open popup or show quick status
+// Handle extension icon click
 chrome.action.onClicked.addListener((tab) => {
   if (tab.id && tab.url?.includes('booking.com/hotel/')) {
-    // On hotel page, trigger analysis via content script
     chrome.tabs.sendMessage(tab.id, { type: 'TRIGGER_ANALYSIS' });
   }
 });

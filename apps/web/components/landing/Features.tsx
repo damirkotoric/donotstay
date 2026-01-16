@@ -56,13 +56,13 @@ const features = [
 
 export function Features() {
   return (
-    <section className="bg-background-subtle border border-t px-4 py-30 sm:px-6 lg:px-8">
+    <section className="bg-muted border border-t px-4 py-30 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
         <div className="mb-16 text-center">
           <h2 className="text-3xl font-bold text-foreground sm:text-4xl">
             Ease of Mind
           </h2>
-          <p className="mt-4 text-xl text-foreground-secondary">
+          <p className="mt-4 text-xl text-muted-foreground">
             Make bookings with confidence.
           </p>
         </div>
@@ -79,13 +79,13 @@ export function Features() {
                 <h3 className="mb-1 font-semibold text-foreground">
                   {feature.title}
                 </h3>
-                <p className="text-sm text-foreground-secondary">{feature.description}</p>
+                <p className="text-sm text-muted-foreground">{feature.description}</p>
               </div>
             </div>
           ))}
         </div>
 
-        <p className="mt-12 text-center text-sm text-foreground-muted">
+        <p className="mt-12 text-center text-sm text-muted-foreground">
           Free users see verdict + top flags. Paid unlocks everything.
         </p>
       </div>

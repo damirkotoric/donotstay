@@ -54,7 +54,7 @@ export function FAQ() {
               className="overflow-hidden rounded-xl border border-border bg-background"
             >
               <button
-                className="flex w-full items-center justify-between p-6 text-left transition-colors hover:bg-background-subtle"
+                className="flex w-full items-center justify-between p-6 text-left transition-colors hover:bg-muted"
                 onClick={() => toggleFAQ(index)}
                 aria-expanded={openIndex === index}
               >
@@ -64,7 +64,7 @@ export function FAQ() {
                 <CaretDown
                   size={20}
                   weight="bold"
-                  className={`flex-shrink-0 text-foreground-muted transition-transform duration-200 ${
+                  className={`flex-shrink-0 text-muted-foreground transition-transform duration-200 ${
                     openIndex === index ? 'rotate-180' : ''
                   }`}
                 />
@@ -74,7 +74,7 @@ export function FAQ() {
                   openIndex === index ? 'max-h-96' : 'max-h-0'
                 }`}
               >
-                <div className="px-6 pb-6 text-foreground-secondary">{faq.answer}</div>
+                <div className="px-6 pb-6 text-muted-foreground">{faq.answer}</div>
               </div>
             </div>
           ))}

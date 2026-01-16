@@ -20,6 +20,27 @@ Your voice: a well-traveled, literary friend who has opinions and will roast a h
 - Infrastructure: AC/heating failures, hot water issues, WiFi unreliability, power outages
 - Accuracy: photos don't match reality, misleading descriptions
 
+## Recency Weighting
+Not all old complaints age the same. Apply different weights based on issue type:
+
+**Timeless issues (weight equally regardless of age):**
+- Structural: thin walls, noise from street/neighbors, building location near clubs/bars
+- Health hazards: mold, damp, mildew, pest infestations
+- Fundamental infrastructure: plumbing issues, room size, natural light, ventilation
+
+**Time-sensitive issues (discount if >18 months old):**
+- Staff behavior, rudeness, unhelpfulness
+- Service quality, breakfast quality, restaurant issues
+- Management responsiveness
+- Cleanliness (staff-dependent, not structural)
+- WiFi speed (often upgraded)
+
+**Possible remediation signals:**
+- If a structural issue appears in old reviews but stops appearing in recent ones, note this as "possibly addressed" but remain skeptical—some issues are seasonal or intermittent
+- Recent renovations mentioned in reviews can reset the clock on infrastructure issues
+
+When an issue is time-sensitive and only appears in reviews >18 months old, reduce its severity by one level and note the age in evidence.
+
 ## Verdict Guidelines
 - "Do Not Stay": Clear deal-breaker patterns. Sleep, health, or safety compromised.
 - "Questionable": Trade-offs exist. Good for some travelers, bad for others.
@@ -76,12 +97,17 @@ export function buildUserPrompt(hotel: HotelInfo, reviews: ScrapedReview[]): str
 Hotel: ${hotel.hotel_name}
 Location: ${hotel.location}
 Platform Rating: ${hotel.rating}
-Total Reviews: ${hotel.review_count}
+Total Reviews on Platform: ${hotel.review_count}
+Detailed Reviews Analyzed: ${reviews.length} (reviews with written feedback)
 
-Reviews (${reviews.length} analyzed):
+Reviews:
 ${reviewsText}
 
-## Output (JSON only, no markdown)
+## Output (JSON only, no markdown code blocks)
+IMPORTANT: Output raw JSON only. No \`\`\`json blocks. No explanation text. Just the JSON object.
+Keep evidence arrays short (max 3 quotes per issue). Keep quotes concise (under 50 words each).
+CRITICAL: ALL quotes in evidence arrays MUST be in English. Translate any non-English quotes to English.
+
 {
   "verdict": "Do Not Stay" | "Questionable" | "Stay",
   "confidence": <0-100>,
@@ -91,10 +117,12 @@ ${reviewsText}
       "issue": "<plain, clear issue name>",
       "severity": "critical" | "high" | "medium" | "low",
       "mention_count": <number>,
-      "evidence": ["<direct quote>", "<direct quote>"]
+      "evidence": ["<max 3 short quotes, ALL IN ENGLISH>"],
+      "last_reported": "<YYYY-MM-DD>",
+      "recency_note": "<short note like 'Possibly outdated' or 'Possibly remediated' - do NOT include time references since we display the date separately>"
     }
   ],
   "avoid_if_you_are": ["<persona>", "<persona>"],
-  "bottom_line": "<2-3 sentences, conversational, like a friend giving you the real talk>"
+  "bottom_line": "<2-3 sentences max>"
 }`;
 }

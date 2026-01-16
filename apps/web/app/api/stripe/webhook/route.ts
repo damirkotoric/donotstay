@@ -25,6 +25,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
     }
 
+    const supabase = supabaseAdmin();
+    if (!supabase) {
+      return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
+    }
+
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
@@ -37,7 +42,7 @@ export async function POST(request: NextRequest) {
             session.subscription as string
           );
 
-          await supabaseAdmin()
+          await supabase
             .from('users')
             .update({
               subscription_status: plan,
@@ -57,7 +62,7 @@ export async function POST(request: NextRequest) {
         const customerId = subscription.customer as string;
 
         // Find user by Stripe customer ID
-        const { data: userData } = await supabaseAdmin()
+        const { data: userData } = await supabase
           .from('users')
           .select('id')
           .eq('stripe_customer_id', customerId)
@@ -72,7 +77,7 @@ export async function POST(request: NextRequest) {
             const priceId = subscription.items.data[0]?.price.id;
             const plan = priceId === process.env.STRIPE_PRICE_ANNUAL ? 'annual' : 'monthly';
 
-            await supabaseAdmin()
+            await supabase
               .from('users')
               .update({
                 subscription_status: plan,
@@ -92,14 +97,14 @@ export async function POST(request: NextRequest) {
         const customerId = subscription.customer as string;
 
         // Find user by Stripe customer ID
-        const { data: userData } = await supabaseAdmin()
+        const { data: userData } = await supabase
           .from('users')
           .select('id')
           .eq('stripe_customer_id', customerId)
           .single();
 
         if (userData) {
-          await supabaseAdmin()
+          await supabase
             .from('users')
             .update({
               subscription_status: 'free',
@@ -117,7 +122,7 @@ export async function POST(request: NextRequest) {
         const customerId = invoice.customer as string;
 
         // Find user by Stripe customer ID
-        const { data: userData } = await supabaseAdmin()
+        const { data: userData } = await supabase
           .from('users')
           .select('id, email')
           .eq('stripe_customer_id', customerId)

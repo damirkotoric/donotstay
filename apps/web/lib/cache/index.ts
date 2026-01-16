@@ -11,9 +11,12 @@ export interface CachedVerdict extends VerdictResponse {
 }
 
 export async function getCachedVerdict(hotelUrl: string): Promise<CachedVerdict | null> {
+  const client = supabaseAdmin();
+  if (!client) return null; // Supabase not configured
+
   const cacheKey = createCacheKey(hotelUrl);
 
-  const { data, error } = await supabaseAdmin()
+  const { data, error } = await client
     .from('verdicts')
     .select('*')
     .eq('hotel_id', cacheKey)
@@ -43,11 +46,14 @@ export async function cacheVerdict(
   hotelUrl: string,
   verdict: VerdictResponse,
   reviewCount: number
-): Promise<string> {
+): Promise<string | null> {
+  const client = supabaseAdmin();
+  if (!client) return null; // Supabase not configured
+
   const cacheKey = createCacheKey(hotelUrl);
   const expiresAt = new Date(Date.now() + VERDICT_CACHE_TTL_MS);
 
-  const { data, error } = await supabaseAdmin()
+  const { data, error } = await client
     .from('verdicts')
     .upsert({
       hotel_id: cacheKey,
@@ -68,7 +74,7 @@ export async function cacheVerdict(
 
   if (error) {
     console.error('Error caching verdict:', error);
-    throw error;
+    return null;
   }
 
   return data.id;

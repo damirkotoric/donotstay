@@ -8,6 +8,8 @@ export const RedFlagSchema = z.object({
   severity: z.enum(['critical', 'high', 'medium', 'low']),
   mention_count: z.number(),
   evidence: z.array(z.string()),
+  last_reported: z.string(),
+  recency_note: z.string().nullish(), // e.g., "Possibly outdated" or "Possibly remediated" - no time references (can be null or undefined)
 });
 
 export const VerdictResponseSchema = z.object({

@@ -9,7 +9,7 @@ const rotatingWords = ['mold', 'thin walls', 'rude staff', 'noise', 'bedbugs', '
 
 export function Hero() {
   return (
-    <section className="bg-gradient-to-b from-background-subtle to-background px-4 pt-40 pb-16 sm:px-6 lg:px-8">
+    <section className="bg-gradient-to-b from-muted to-background px-4 pt-40 pb-16 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
         <div className="grid items-center gap-12 md:grid-cols-2">
           {/* Text content - left side */}
@@ -19,11 +19,11 @@ export function Hero() {
               <FlipWords words={rotatingWords} className="text-primary" />{' '}
               before you book.
             </h1>
-            <p className="mt-4 text-xl text-foreground-secondary">
+            <p className="mt-4 text-xl text-muted-foreground">
               We read the reviews. You get the verdict.
             </p>
             <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-              <Button size="xl" asChild>
+              <Button variant="default" size="xl" asChild>
                 <a
                   href={siteConfig.chromeWebStoreUrl}
                   target="_blank"
@@ -33,25 +33,25 @@ export function Hero() {
                 </a>
               </Button>
             </div>
-            <p className="mt-2 text-xs text-foreground-muted">
+            <p className="mt-2 text-xs text-muted-foreground">
               Free tier: {siteConfig.pricing.free.checksPerWindow} checks every{' '}
               {siteConfig.pricing.free.windowHours === 1 ? 'hour' : `${siteConfig.pricing.free.windowHours} hours`}
             </p>
             <div className="mt-8">
-              <p className="mb-2 text-xs text-foreground-muted uppercase font-semibold">Works with</p>
+              <p className="mb-2 text-xs text-muted-foreground uppercase font-semibold">Works with</p>
               <div className="mb-1.5 flex items-center gap-6">
                 <BookingLogo className="h-8 w-auto" />
               </div>
-              <p className="text-xs text-foreground-muted">Airbnb and Expedia coming next</p>
+              <p className="text-xs text-muted-foreground">Airbnb and Expedia coming next</p>
             </div>
           </div>
 
           {/* Image placeholder - right side */}
           <div className="relative">
-            <div className="flex aspect-[1/1] items-center justify-center rounded-2xl bg-background-muted shadow-lg">
+            <div className="flex aspect-[1/1] items-center justify-center rounded-2xl bg-card shadow-lg">
               <div className="p-8 text-center">
                 <div className="mb-4 text-6xl">🏨</div>
-                <span className="text-foreground-subtle">
+                <span className="text-muted-foreground">
                   Extension screenshot placeholder
                 </span>
               </div>

@@ -16,4 +16,7 @@ export interface HotelInfo {
   rating: number;
   review_count: number;
   url: string;
+  // Booking.com specific fields for fetching reviews
+  cc1?: string; // Country code (e.g., "gb", "us")
+  pagename?: string; // Hotel slug from URL
 }

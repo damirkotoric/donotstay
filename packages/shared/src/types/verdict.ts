@@ -7,6 +7,8 @@ export interface RedFlag {
   severity: Severity;
   mention_count: number;
   evidence: string[];
+  last_reported: string;
+  recency_note?: string; // e.g., "outdated - staff issue" or "possibly remediated"
 }
 
 export interface VerdictResult {

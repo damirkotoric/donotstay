@@ -3,6 +3,12 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { checkRateLimit } from '@/lib/rate-limit';
 import type { UserInfo, ApiError } from '@donotstay/shared';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
 export async function GET(request: NextRequest) {
   try {
     // Get user from auth header
@@ -11,22 +17,29 @@ export async function GET(request: NextRequest) {
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json<ApiError>(
         { error: 'Unauthorized', code: 'UNAUTHORIZED' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       );
     }
 
     const token = authHeader.slice(7);
-    const { data: { user }, error: authError } = await supabaseAdmin().auth.getUser(token);
+    const supabase = supabaseAdmin();
+    if (!supabase) {
+      return NextResponse.json<ApiError>(
+        { error: 'Database not configured', code: 'DB_NOT_CONFIGURED' },
+        { status: 503, headers: corsHeaders }
+      );
+    }
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
       return NextResponse.json<ApiError>(
         { error: 'Invalid token', code: 'INVALID_TOKEN' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       );
     }
 
     // Get user data from our users table
-    const { data: userData, error: userError } = await supabaseAdmin()
+    const { data: userData, error: userError } = await supabase
       .from('users')
       .select('*')
       .eq('id', user.id)
@@ -34,7 +47,7 @@ export async function GET(request: NextRequest) {
 
     if (userError || !userData) {
       // User authenticated but not in our table yet - create entry
-      const { data: newUser, error: createError } = await supabaseAdmin()
+      const { data: newUser, error: createError } = await supabase
         .from('users')
         .insert({
           id: user.id,
@@ -47,7 +60,7 @@ export async function GET(request: NextRequest) {
       if (createError || !newUser) {
         return NextResponse.json<ApiError>(
           { error: 'Failed to create user', code: 'USER_CREATE_ERROR' },
-          { status: 500 }
+          { status: 500, headers: corsHeaders }
         );
       }
 
@@ -65,7 +78,7 @@ export async function GET(request: NextRequest) {
         },
       };
 
-      return NextResponse.json(response);
+      return NextResponse.json(response, { headers: corsHeaders });
     }
 
     // Get rate limit info
@@ -83,23 +96,16 @@ export async function GET(request: NextRequest) {
       },
     };
 
-    return NextResponse.json(response);
+    return NextResponse.json(response, { headers: corsHeaders });
   } catch (error) {
     console.error('Error getting user:', error);
     return NextResponse.json<ApiError>(
       { error: 'Failed to get user', code: 'USER_ERROR' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
 
 export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
-  });
+  return new NextResponse(null, { status: 200, headers: corsHeaders });
 }

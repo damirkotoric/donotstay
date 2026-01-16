@@ -15,7 +15,14 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.slice(7);
-    const { data: { user }, error: authError } = await supabaseAdmin().auth.getUser(token);
+    const supabase = supabaseAdmin();
+    if (!supabase) {
+      return NextResponse.json<ApiError>(
+        { error: 'Database not configured', code: 'DB_NOT_CONFIGURED' },
+        { status: 503 }
+      );
+    }
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
       return NextResponse.json<ApiError>(
@@ -41,7 +48,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { error } = await supabaseAdmin().from('feedback').insert({
+    const { error } = await supabase.from('feedback').insert({
       user_id: user.id,
       verdict_id,
       type,

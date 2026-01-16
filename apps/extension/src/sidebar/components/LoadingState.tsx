@@ -1,10 +1,8 @@
-import React from 'react';
-
 function LoadingState() {
   return (
-    <div className="loading-state">
-      <div className="loading-spinner" />
-      <div className="loading-text">Analyzing reviews...</div>
+    <div className="flex flex-col items-center justify-center py-15 px-5 text-center">
+      <div className="w-12 h-12 border-3 border-border border-t-destructive rounded-full animate-spin mb-4" />
+      <div className="text-base text-muted-foreground">Analyzing reviews...</div>
     </div>
   );
 }

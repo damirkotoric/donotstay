@@ -103,7 +103,13 @@ cd apps/extension
 pnpm dev
 ```
 
-Watches for changes and rebuilds to `dist/`.
+This runs:
+- **Vite dev server** at `localhost:5173` for iframe content (HMR enabled)
+- **Build watcher** that rebuilds `dist/` when content scripts change
+
+UI changes (sidebar, button, badge) update **instantly** without reloading. Content script changes require a page refresh.
+
+Production builds (`pnpm build`) automatically disable dev mode via environment variables.
 
 ### Shared Package
 

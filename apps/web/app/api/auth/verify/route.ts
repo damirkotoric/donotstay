@@ -15,8 +15,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const supabase = supabaseAdmin();
+    if (!supabase) {
+      return NextResponse.json<ApiError>(
+        { error: 'Database not configured', code: 'DB_NOT_CONFIGURED' },
+        { status: 503 }
+      );
+    }
+
     // Verify the OTP token
-    const { data, error } = await supabaseAdmin().auth.verifyOtp({
+    const { data, error } = await supabase.auth.verifyOtp({
       token_hash: token,
       type: type === 'recovery' ? 'recovery' : 'email',
     });
@@ -31,14 +39,14 @@ export async function GET(request: NextRequest) {
     const user = data.user;
 
     // Ensure user exists in our users table
-    const { data: existingUser } = await supabaseAdmin()
+    const { data: existingUser } = await supabase
       .from('users')
       .select('id')
       .eq('id', user.id)
       .single();
 
     if (!existingUser) {
-      await supabaseAdmin().from('users').insert({
+      await supabase.from('users').insert({
         id: user.id,
         email: user.email!,
         subscription_status: 'free',

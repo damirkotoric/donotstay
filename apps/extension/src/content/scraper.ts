@@ -1,12 +1,32 @@
-import type { HotelInfo, ScrapedReview } from '@donotstay/shared';
+import type { HotelInfo } from '@donotstay/shared';
 
-const MAX_REVIEWS = 50;
+export interface GraphQLParams {
+  hotelId: number;
+  ufi: number;
+  countryCode: string;
+  pageviewId: string;
+}
 
 /**
- * Scrape hotel information from Booking.com hotel page
+ * Extract hotel information from URL and page
+ * Reviews are fetched separately via the background script API
  */
 export function scrapeHotelInfo(): HotelInfo | null {
   try {
+    const url = window.location.href;
+
+    // Extract country code and hotel slug from URL
+    // Format: https://www.booking.com/hotel/<cc>/<slug>.html
+    const hotelIdMatch = url.match(/\/hotel\/([a-z]{2})\/([^/.?]+)/);
+    if (!hotelIdMatch) {
+      console.error('DoNotStay: Could not parse hotel ID from URL');
+      return null;
+    }
+
+    const cc1 = hotelIdMatch[1]; // Country code (e.g., "gb", "us")
+    const pagename = hotelIdMatch[2]; // Hotel slug
+    const hotelId = `${cc1}/${pagename}`;
+
     // Hotel name - multiple selector strategies
     const hotelName =
       document.querySelector('[data-testid="property-header-name"]')?.textContent?.trim() ||
@@ -33,19 +53,15 @@ export function scrapeHotelInfo(): HotelInfo | null {
       '0';
     const rating = parseFloat(ratingText) || 0;
 
-    // Review count
+    // Review count - look specifically for "X review(s)" pattern to avoid capturing rating
     const reviewCountText =
       document.querySelector('[data-testid="review-score-component"] .abf093bdfe')?.textContent?.trim() ||
       document.querySelector('.bui-review-score__text')?.textContent?.trim() ||
       document.querySelector('[data-testid="review-score-right-component"]')?.parentElement?.textContent?.trim() ||
       '0';
-    const reviewCountMatch = reviewCountText.match(/[\d,]+/);
-    const reviewCount = reviewCountMatch ? parseInt(reviewCountMatch[0].replace(/,/g, ''), 10) : 0;
-
-    // Hotel ID from URL
-    const url = window.location.href;
-    const hotelIdMatch = url.match(/\/hotel\/([a-z]{2})\/([^/.]+)/);
-    const hotelId = hotelIdMatch ? `${hotelIdMatch[1]}/${hotelIdMatch[2]}` : url;
+    // Match number followed by "review" or "reviews" to avoid capturing rating score
+    const reviewCountMatch = reviewCountText.match(/(\d[\d,]*)\s*reviews?/i);
+    const reviewCount = reviewCountMatch ? parseInt(reviewCountMatch[1].replace(/,/g, ''), 10) : 0;
 
     return {
       hotel_id: hotelId,
@@ -54,6 +70,9 @@ export function scrapeHotelInfo(): HotelInfo | null {
       rating,
       review_count: reviewCount,
       url,
+      // Additional fields for review fetching
+      cc1,
+      pagename,
     };
   } catch (error) {
     console.error('DoNotStay: Error scraping hotel info', error);
@@ -62,170 +81,149 @@ export function scrapeHotelInfo(): HotelInfo | null {
 }
 
 /**
- * Scrape reviews from Booking.com hotel page
- * Uses multiple selector strategies for resilience
+ * Extract parameters needed for GraphQL API calls from the page
  */
-export async function scrapeReviews(): Promise<ScrapedReview[]> {
-  const reviews: ScrapedReview[] = [];
-
+export function scrapeGraphQLParams(): GraphQLParams | null {
   try {
-    // First, try to find review containers
-    const reviewContainers = findReviewContainers();
-
-    for (const container of reviewContainers) {
-      if (reviews.length >= MAX_REVIEWS) break;
-
-      const review = parseReviewContainer(container);
-      if (review) {
-        reviews.push(review);
-      }
-    }
-
-    // If we didn't get enough reviews, try expanding or loading more
-    if (reviews.length < 10 && reviewContainers.length > 0) {
-      await tryLoadMoreReviews();
-
-      // Try again after loading more
-      const moreContainers = findReviewContainers();
-      for (const container of moreContainers) {
-        if (reviews.length >= MAX_REVIEWS) break;
-
-        // Skip if we already have this review
-        const review = parseReviewContainer(container);
-        if (review && !reviews.some(r => r.text === review.text && r.author === review.author)) {
-          reviews.push(review);
-        }
-      }
-    }
-
-    console.log(`DoNotStay: Found ${reviews.length} reviews`);
-    return reviews;
-  } catch (error) {
-    console.error('DoNotStay: Error scraping reviews', error);
-    return reviews;
-  }
-}
-
-/**
- * Find review container elements using multiple strategies
- */
-function findReviewContainers(): Element[] {
-  // Strategy 1: data-testid selectors (most stable)
-  let containers = Array.from(document.querySelectorAll('[data-testid="review-card"]'));
-  if (containers.length > 0) return containers;
-
-  // Strategy 2: Class-based selectors
-  containers = Array.from(document.querySelectorAll('.review_list_new_item_block'));
-  if (containers.length > 0) return containers;
-
-  // Strategy 3: Newer Booking.com layout
-  containers = Array.from(document.querySelectorAll('[data-testid="PropertyReviewCard"]'));
-  if (containers.length > 0) return containers;
-
-  // Strategy 4: Look for review-like structures
-  containers = Array.from(document.querySelectorAll('.c-review-block'));
-  if (containers.length > 0) return containers;
-
-  // Strategy 5: Generic fallback
-  containers = Array.from(document.querySelectorAll('[class*="review"][class*="item"]'));
-
-  return containers;
-}
-
-/**
- * Parse a single review container into structured data
- */
-function parseReviewContainer(container: Element): ScrapedReview | null {
-  try {
-    // Author name
-    const author =
-      container.querySelector('[data-testid="review-author"]')?.textContent?.trim() ||
-      container.querySelector('.bui-avatar-block__title')?.textContent?.trim() ||
-      container.querySelector('[class*="reviewer_name"]')?.textContent?.trim() ||
-      'Anonymous';
-
-    // Country
-    const country =
-      container.querySelector('[data-testid="review-country"]')?.textContent?.trim() ||
-      container.querySelector('.bui-avatar-block__subtitle')?.textContent?.trim() ||
-      container.querySelector('[class*="reviewer_country"]')?.textContent?.trim() ||
-      undefined;
-
-    // Score
-    const scoreText =
-      container.querySelector('[data-testid="review-score"]')?.textContent?.trim() ||
-      container.querySelector('.bui-review-score__badge')?.textContent?.trim() ||
-      container.querySelector('[class*="review_score"]')?.textContent?.trim() ||
-      '0';
-    const score = parseFloat(scoreText) || 0;
-
-    // Date
-    const date =
-      container.querySelector('[data-testid="review-date"]')?.textContent?.trim() ||
-      container.querySelector('.c-review-block__date')?.textContent?.trim() ||
-      container.querySelector('[class*="review_date"]')?.textContent?.trim() ||
-      '';
-
-    // Title
-    const title =
-      container.querySelector('[data-testid="review-title"]')?.textContent?.trim() ||
-      container.querySelector('.c-review-block__title')?.textContent?.trim() ||
-      undefined;
-
-    // Positive (pros)
-    const prosElement =
-      container.querySelector('[data-testid="review-positive-text"]') ||
-      container.querySelector('.c-review__row--positive .c-review__body') ||
-      container.querySelector('[class*="positive"] [class*="text"]');
-    const pros = prosElement?.textContent?.trim();
-
-    // Negative (cons)
-    const consElement =
-      container.querySelector('[data-testid="review-negative-text"]') ||
-      container.querySelector('.c-review__row--negative .c-review__body') ||
-      container.querySelector('[class*="negative"] [class*="text"]');
-    const cons = consElement?.textContent?.trim();
-
-    // Full text (if pros/cons not found separately)
-    const fullText =
-      container.querySelector('[data-testid="review-text"]')?.textContent?.trim() ||
-      container.querySelector('.review_content')?.textContent?.trim();
-
-    // Skip if we have no content at all
-    if (!pros && !cons && !fullText) {
+    // Extract numeric hotelId from Schema.org JSON-LD
+    const hotelId = extractHotelIdFromJsonLd();
+    if (!hotelId) {
+      console.error('DoNotStay: Could not find numeric hotel ID');
       return null;
     }
 
-    return {
-      author,
-      country,
-      score,
-      date,
-      title,
-      pros,
-      cons,
-      text: fullText,
-    };
+    // Extract ufi (location ID) from page context
+    const ufi = extractUfi();
+    if (!ufi) {
+      console.error('DoNotStay: Could not find ufi');
+      return null;
+    }
+
+    // Extract country code from URL
+    const countryMatch = window.location.pathname.match(/\/hotel\/([a-z]{2})\//);
+    const countryCode = countryMatch ? countryMatch[1] : '';
+
+    // Extract pageview_id from window.B.env
+    const pageviewId = extractPageviewId();
+    if (!pageviewId) {
+      console.error('DoNotStay: Could not find pageview ID');
+      return null;
+    }
+
+    return { hotelId, ufi, countryCode, pageviewId };
   } catch (error) {
-    console.error('DoNotStay: Error parsing review container', error);
+    console.error('DoNotStay: Error extracting GraphQL params', error);
     return null;
   }
 }
 
 /**
- * Try to load more reviews by clicking "load more" or scrolling
+ * Extract numeric hotel ID from Schema.org JSON-LD embedded in page
  */
-async function tryLoadMoreReviews(): Promise<void> {
-  // Look for "load more" or "show all reviews" button
-  const loadMoreButton =
-    document.querySelector('[data-testid="read-all-reviews"]') ||
-    document.querySelector('[data-testid="load-more-reviews"]') ||
-    document.querySelector('.show_all_reviews_btn') ||
-    document.querySelector('[class*="load-more"]');
-
-  if (loadMoreButton && loadMoreButton instanceof HTMLElement) {
-    loadMoreButton.click();
-    // Wait for reviews to load
-    await new Promise(resolve => setTimeout(resolve, 1500));
+function extractHotelIdFromJsonLd(): number | null {
+  const scripts = document.querySelectorAll('script[type="application/ld+json"]');
+  for (const script of scripts) {
+    try {
+      const data = JSON.parse(script.textContent || '');
+      // Look for Hotel schema with identifier
+      if (data['@type'] === 'Hotel' && data.identifier) {
+        const id = parseInt(data.identifier, 10);
+        if (!isNaN(id)) return id;
+      }
+      // Also check for array of schemas
+      if (Array.isArray(data)) {
+        for (const item of data) {
+          if (item['@type'] === 'Hotel' && item.identifier) {
+            const id = parseInt(item.identifier, 10);
+            if (!isNaN(id)) return id;
+          }
+        }
+      }
+    } catch {
+      // Continue to next script tag
+    }
   }
+
+  // Fallback: try to find hotel_id in page scripts
+  const allScripts = document.querySelectorAll('script:not([src])');
+  for (const script of allScripts) {
+    const content = script.textContent || '';
+    // Look for b_hotel_id or hotelId patterns
+    const match = content.match(/b_hotel_id["']?\s*[:=]\s*["']?(\d+)/) ||
+                  content.match(/hotelId["']?\s*[:=]\s*["']?(\d+)/) ||
+                  content.match(/"hotel_id"\s*:\s*(\d+)/);
+    if (match) {
+      const id = parseInt(match[1], 10);
+      if (!isNaN(id)) return id;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Extract ufi (location identifier) from page context
+ */
+function extractUfi(): number | null {
+  // Try to find ufi in inline scripts
+  const allScripts = document.querySelectorAll('script:not([src])');
+  for (const script of allScripts) {
+    const content = script.textContent || '';
+    // Look for ufi or dest_id patterns
+    const match = content.match(/["']ufi["']\s*[:=]\s*(-?\d+)/) ||
+                  content.match(/ufi\s*[:=]\s*(-?\d+)/) ||
+                  content.match(/dest_id["']?\s*[:=]\s*["']?(-?\d+)/) ||
+                  content.match(/"destId"\s*:\s*(-?\d+)/);
+    if (match) {
+      const id = parseInt(match[1], 10);
+      if (!isNaN(id)) return id;
+    }
+  }
+
+  // Fallback: try window.booking object
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const win = window as any;
+    if (win.booking?.env?.b_dest_id) {
+      return parseInt(win.booking.env.b_dest_id, 10);
+    }
+    if (win.B?.env?.b_dest_id) {
+      return parseInt(win.B.env.b_dest_id, 10);
+    }
+  } catch {
+    // Ignore errors accessing window properties
+  }
+
+  return null;
+}
+
+/**
+ * Extract pageview_id from window.B.env
+ */
+function extractPageviewId(): string | null {
+  // Try direct access to window.B.env
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const win = window as any;
+    if (win.B?.env?.pageview_id) {
+      return win.B.env.pageview_id;
+    }
+    if (win.booking?.env?.pageview_id) {
+      return win.booking.env.pageview_id;
+    }
+  } catch {
+    // Ignore errors
+  }
+
+  // Fallback: parse from inline scripts
+  const allScripts = document.querySelectorAll('script:not([src])');
+  for (const script of allScripts) {
+    const content = script.textContent || '';
+    const match = content.match(/pageview_id["']?\s*[:=]\s*["']([a-f0-9]+)["']/);
+    if (match) {
+      return match[1];
+    }
+  }
+
+  return null;
 }

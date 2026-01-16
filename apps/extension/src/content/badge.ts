@@ -1,3 +1,11 @@
+// Use Vite env vars for dev mode (set in .env.development / .env.production)
+const DEV_MODE = import.meta.env.VITE_DEV_MODE === 'true';
+const DEV_SERVER_URL = import.meta.env.VITE_DEV_SERVER_URL || 'http://localhost:5173';
+
+function getIframeUrl(path: string): string {
+  return DEV_MODE ? `${DEV_SERVER_URL}/${path}` : chrome.runtime.getURL(path);
+}
+
 export type BadgeState = 'loading' | 'stay' | 'depends' | 'do_not_stay' | 'error' | 'rate_limited';
 
 interface BadgeUpdate {
@@ -7,83 +15,76 @@ interface BadgeUpdate {
   message?: string;
 }
 
-let badgeElement: HTMLElement | null = null;
+let badgeContainer: HTMLElement | null = null;
+let badgeIframe: HTMLIFrameElement | null = null;
+let clickCallback: (() => void) | null = null;
+let currentBadgeState: BadgeUpdate = { state: 'loading' };
+let iframeReady = false;
 
 /**
- * Inject the floating badge into the page
+ * Handle messages from badge iframe
  */
-export function injectBadge(onClick: () => void): void {
-  // Remove existing badge if present
-  const existing = document.getElementById('donotstay-badge');
-  if (existing) {
-    existing.remove();
+function handleBadgeMessage(event: MessageEvent): void {
+  if (event.data?.type === 'DONOTSTAY_BADGE_CLICK') {
+    if (clickCallback) {
+      clickCallback();
+    }
+  }
+  // Badge iframe is ready and requesting current state
+  if (event.data?.type === 'DONOTSTAY_BADGE_READY') {
+    iframeReady = true;
+    // Send current state to the badge
+    if (badgeIframe?.contentWindow) {
+      badgeIframe.contentWindow.postMessage(
+        { type: 'DONOTSTAY_BADGE_UPDATE', payload: currentBadgeState },
+        '*'
+      );
+    }
+  }
+}
+
+/**
+ * Inject the floating badge iframe into the page
+ */
+export function injectBadge(onClick?: () => void): void {
+  // If badge already exists, just update the click callback
+  if (badgeContainer && badgeIframe) {
+    clickCallback = onClick || null;
+    return;
   }
 
-  badgeElement = document.createElement('div');
-  badgeElement.id = 'donotstay-badge';
-  badgeElement.className = 'loading';
-  badgeElement.innerHTML = `
-    <div class="spinner"></div>
-    <span class="text">Analyzing...</span>
-  `;
-  badgeElement.addEventListener('click', onClick);
+  clickCallback = onClick || null;
+  iframeReady = false;
 
-  document.body.appendChild(badgeElement);
+  // Create container
+  badgeContainer = document.createElement('div');
+  badgeContainer.id = 'donotstay-badge-container';
+
+  // Create iframe
+  badgeIframe = document.createElement('iframe');
+  badgeIframe.id = 'donotstay-badge-iframe';
+  badgeIframe.src = getIframeUrl('src/badge/index.html');
+
+  badgeContainer.appendChild(badgeIframe);
+  document.body.appendChild(badgeContainer);
+
+  // Listen for messages from badge iframe
+  window.addEventListener('message', handleBadgeMessage);
 }
 
 /**
  * Update badge state and content
  */
 export function updateBadge(update: BadgeUpdate): void {
-  if (!badgeElement) return;
+  // Always store the state so we can send it when iframe is ready
+  currentBadgeState = update;
 
-  badgeElement.className = update.state;
-
-  switch (update.state) {
-    case 'loading':
-      badgeElement.innerHTML = `
-        <div class="spinner"></div>
-        <span class="text">Analyzing...</span>
-      `;
-      break;
-
-    case 'stay':
-      badgeElement.innerHTML = `
-        <span class="icon">&#10003;</span>
-        <span class="text">Stay</span>
-        ${update.confidence ? `<span class="confidence">${update.confidence}%</span>` : ''}
-      `;
-      break;
-
-    case 'depends':
-      badgeElement.innerHTML = `
-        <span class="icon">&#8226;</span>
-        <span class="text">Questionable</span>
-        ${update.confidence ? `<span class="confidence">${update.confidence}%</span>` : ''}
-      `;
-      break;
-
-    case 'do_not_stay':
-      badgeElement.innerHTML = `
-        <span class="icon">&#10007;</span>
-        <span class="text">Do Not Stay</span>
-        ${update.confidence ? `<span class="confidence">${update.confidence}%</span>` : ''}
-      `;
-      break;
-
-    case 'error':
-      badgeElement.innerHTML = `
-        <span class="icon">!</span>
-        <span class="text">${update.message || 'Error'}</span>
-      `;
-      break;
-
-    case 'rate_limited':
-      badgeElement.innerHTML = `
-        <span class="icon">&#128274;</span>
-        <span class="text">Limit reached</span>
-      `;
-      break;
+  // Only send if iframe is ready
+  if (iframeReady && badgeIframe?.contentWindow) {
+    badgeIframe.contentWindow.postMessage(
+      { type: 'DONOTSTAY_BADGE_UPDATE', payload: update },
+      '*'
+    );
   }
 }
 
@@ -91,8 +92,33 @@ export function updateBadge(update: BadgeUpdate): void {
  * Remove badge from page
  */
 export function removeBadge(): void {
-  if (badgeElement) {
-    badgeElement.remove();
-    badgeElement = null;
+  window.removeEventListener('message', handleBadgeMessage);
+
+  if (badgeContainer) {
+    badgeContainer.remove();
+    badgeContainer = null;
+    badgeIframe = null;
+  }
+
+  // Reset state
+  currentBadgeState = { state: 'loading' };
+  iframeReady = false;
+}
+
+/**
+ * Hide badge (but keep it in DOM)
+ */
+export function hideBadge(): void {
+  if (badgeContainer) {
+    badgeContainer.style.display = 'none';
+  }
+}
+
+/**
+ * Show badge
+ */
+export function showBadge(): void {
+  if (badgeContainer) {
+    badgeContainer.style.display = 'block';
   }
 }

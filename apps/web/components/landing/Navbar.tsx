@@ -71,13 +71,13 @@ export function Navbar() {
               <a
                 href={siteConfig.links.howItWorks}
                 onClick={scrollToHowItWorks}
-                className="text-foreground-secondary transition-colors hover:text-foreground font-medium"
+                className="text-muted-foreground transition-colors hover:text-foreground font-medium"
               >
                 How it Works
               </a>
               <a
                 href={siteConfig.links.pricing}
-                className="text-foreground-secondary transition-colors hover:text-foreground font-medium"
+                className="text-muted-foreground transition-colors hover:text-foreground font-medium"
               >
                 Pricing
               </a>
@@ -98,7 +98,7 @@ export function Navbar() {
               onClick={() => setIsDrawerOpen(true)}
               aria-label="Open menu"
             >
-              <List size={24} weight="bold" className="text-foreground-secondary" />
+              <List size={24} weight="bold" className="text-muted-foreground" />
             </button>
           </div>
         </div>
@@ -128,20 +128,20 @@ export function Navbar() {
             className="p-2"
             aria-label="Close menu"
           >
-            <X size={24} weight="bold" className="text-foreground-secondary" />
+            <X size={24} weight="bold" className="text-muted-foreground" />
           </button>
         </div>
         <div className="flex flex-col gap-4 px-4 py-6">
           <a
             href={siteConfig.links.howItWorks}
-            className="text-lg font-semibold text-foreground-secondary transition-colors hover:text-foreground"
+            className="text-lg font-semibold text-muted-foreground transition-colors hover:text-foreground"
             onClick={scrollToHowItWorks}
           >
             How it Works
           </a>
           <a
             href={siteConfig.links.pricing}
-            className="text-lg font-medium text-foreground-secondary transition-colors hover:text-foreground"
+            className="text-lg font-medium text-muted-foreground transition-colors hover:text-foreground"
             onClick={() => setIsDrawerOpen(false)}
           >
             Pricing

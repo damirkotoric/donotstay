@@ -16,7 +16,15 @@ export async function POST(request: NextRequest) {
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-    const { error } = await supabaseAdmin().auth.signInWithOtp({
+    const supabase = supabaseAdmin();
+    if (!supabase) {
+      return NextResponse.json<ApiError>(
+        { error: 'Database not configured', code: 'DB_NOT_CONFIGURED' },
+        { status: 503 }
+      );
+    }
+
+    const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
         emailRedirectTo: `${appUrl}/auth/callback`,
