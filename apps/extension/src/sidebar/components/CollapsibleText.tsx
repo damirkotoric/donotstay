@@ -23,11 +23,11 @@ function CollapsibleText({ text, maxLines = 3 }: CollapsibleTextProps) {
   }, [text, maxLines]);
 
   return (
-    <div>
+    <div className="relative">
       <p
         ref={textRef}
         className={`text-sm text-muted-foreground transition-all duration-200 ${
-          !isExpanded && needsCollapse ? 'line-clamp-4' : ''
+          !isExpanded && needsCollapse ? 'line-clamp-3' : ''
         }`}
       >
         {text}
@@ -37,9 +37,10 @@ function CollapsibleText({ text, maxLines = 3 }: CollapsibleTextProps) {
           variant="link"
           size="sm"
           onClick={() => setIsExpanded(true)}
-          className="p-0"
+          className="absolute bottom-0 right-0 p-0 gap-1 h-auto text-sm bg-gradient-to-r from-transparent via-background to-background pl-20"
         >
-          more <CaretDown size={12} weight="bold" />
+          <span>more</span>
+          <CaretDown size={12} weight="bold" />
         </Button>
       )}
     </div>

@@ -1,4 +1,5 @@
 import type { Verdict } from '@donotstay/shared';
+import { AnimatedCircularProgressBar } from '@donotstay/ui';
 import { ThumbsDown } from '@phosphor-icons/react';
 
 interface VerdictCardProps {
@@ -23,13 +24,28 @@ function VerdictCard({ verdict, oneLiner, confidenceScore, reviewCount }: Verdic
   };
 
   const getConfidenceLabel = () => {
-    if (confidenceScore >= 80) return 'High confidence in verdict.';
-    if (confidenceScore >= 60) return 'Moderate confidence in verdict.';
-    return 'Low confidence in verdict.';
+    if (confidenceScore >= 80) return 'High confidence.';
+    if (confidenceScore >= 60) return 'Moderate confidence.';
+    return 'Low confidence.';
   };
 
+  const getProgressColors = () => {
+    switch (verdict) {
+      case 'Stay':
+        return { primary: 'var(--color-verdict-stay)', secondary: 'var(--color-verdict-stay-light)', text: 'var(--color-foreground)' };
+      case 'Questionable':
+        return { primary: 'var(--color-verdict-depends)', secondary: 'var(--color-verdict-depends-light)', text: 'var(--color-foreground)' };
+      case 'Do Not Stay':
+        return { primary: 'var(--color-verdict-donotstay)', secondary: 'var(--color-verdict-donotstay-light)', text: 'var(--color-foreground)' };
+      default:
+        return { primary: 'var(--color-muted-foreground)', secondary: 'var(--color-muted)', text: 'var(--color-foreground)' };
+    }
+  };
+
+  const progressColors = getProgressColors();
+
   return (
-    <div className={`rounded-2xl overflow-hidden ${getStyles()}`}>
+    <div className={`border shadow-md rounded-2xl overflow-hidden ${getStyles()}`}>
       <div className="p-6">
         <div>
           {verdict === 'Do Not Stay' ? (
@@ -45,16 +61,23 @@ function VerdictCard({ verdict, oneLiner, confidenceScore, reviewCount }: Verdic
           )}
           <div className="text-3xl font-black">{oneLiner}</div>
         </div>
-        <div className="flex text-foreground items-center mt-6 border-t border-black/12 pt-4 gap-6">
-          <div
-            className="text-4xl font-bold"
-          >
-            {confidenceScore}%
-          </div>
-          <div className="mt-2">
+        <div className="relative flex text-foreground items-center mt-4 pt-4 gap-4">
+          <AnimatedCircularProgressBar
+            value={confidenceScore}
+            min={0}
+            max={100}
+            gaugePrimaryColor={progressColors.primary}
+            gaugeSecondaryColor={progressColors.secondary}
+            textColor={progressColors.text}
+            className="size-20 text-lg flex-none"
+          />
+          <div className="text-[13px]">
             <div className="text-sm font-semibold">{getConfidenceLabel()}</div>
-            <div className="text-[13px] opacity-70">
-              Based on {reviewCount} detailed review{reviewCount !== 1 ? 's' : ''}. Score-only reviews excluded.
+            <div className="text-muted-foreground">
+              Based on {reviewCount} detailed review{reviewCount !== 1 ? 's' : ''}.
+            </div>
+            <div className="text-muted-foreground">
+              Score-only reviews are excluded.
             </div>
           </div>
         </div>
