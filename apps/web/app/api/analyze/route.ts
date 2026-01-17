@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
 
     // Check for cached verdict
     const cached = await getCachedVerdict(hotel.url);
-    if (cached) {
+    if (cached && cached.verdict) {
       const response: AnalyzeResponse = {
         hotel_id: hotel.hotel_id,
         verdict: cached.verdict,
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Call Claude API
-    const userPrompt = buildUserPrompt(hotel, reviews);
+    const { prompt: userPrompt, codeVerdict } = buildUserPrompt(hotel, reviews);
 
     const message = await anthropic().messages.create({
       model: MODEL,
@@ -191,8 +191,23 @@ export async function POST(request: NextRequest) {
     }
     const verdict = validationResult.data;
 
+    // Determine final verdict: code baseline + LLM adjustment (escalation or false positive correction)
+    let finalVerdictValue = codeVerdict;
+
+    // LLM can escalate (make worse) OR downgrade for false positives
+    if (verdict.verdict_escalation && verdict.verdict_escalation !== codeVerdict) {
+      console.log(`LLM adjusted verdict: ${codeVerdict} → ${verdict.verdict_escalation}`);
+      console.log(`Reason: ${verdict.escalation_reason}`);
+      finalVerdictValue = verdict.verdict_escalation;
+    }
+
+    const finalVerdict = {
+      ...verdict,
+      verdict: finalVerdictValue,
+    };
+
     // Cache the verdict
-    await cacheVerdict(hotel.url, verdict, reviews.length);
+    await cacheVerdict(hotel.url, finalVerdict, reviews.length);
 
     // Record the check for rate limiting
     if (userId) {
@@ -201,7 +216,7 @@ export async function POST(request: NextRequest) {
 
     const response: AnalyzeResponse = {
       hotel_id: hotel.hotel_id,
-      verdict: verdict.verdict,
+      verdict: finalVerdictValue, // Code baseline + valid LLM escalation
       confidence: verdict.confidence,
       one_liner: verdict.one_liner,
       red_flags: verdict.red_flags,

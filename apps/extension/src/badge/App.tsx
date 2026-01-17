@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { ThumbsUp, Question, ThumbsDown } from '@phosphor-icons/react';
+import { useEffect, useState } from 'react';
+import { Button } from '@donotstay/ui';
+import { ThumbsUp, Question, ThumbsDown, Warning, Lock } from '@phosphor-icons/react';
 
 type BadgeState = 'loading' | 'stay' | 'depends' | 'do_not_stay' | 'error' | 'rate_limited';
 
@@ -14,7 +15,6 @@ function App() {
   const [data, setData] = useState<BadgeData>({ state: 'loading' });
 
   useEffect(() => {
-    // Listen for messages from content script
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'DONOTSTAY_BADGE_UPDATE') {
         setData(event.data.payload);
@@ -22,80 +22,76 @@ function App() {
     };
 
     window.addEventListener('message', handleMessage);
-
-    // Tell the content script we're ready to receive updates
     window.parent.postMessage({ type: 'DONOTSTAY_BADGE_READY' }, '*');
 
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
   const handleClick = () => {
-    // Notify content script that badge was clicked
     window.parent.postMessage({ type: 'DONOTSTAY_BADGE_CLICK' }, '*');
   };
 
-  const renderContent = () => {
+  const getIcon = () => {
+    switch (data.state) {
+      case 'stay':
+        return ThumbsUp;
+      case 'depends':
+        return Question;
+      case 'do_not_stay':
+        return ThumbsDown;
+      case 'error':
+        return Warning;
+      case 'rate_limited':
+        return Lock;
+      default:
+        return undefined;
+    }
+  };
+
+  const getText = () => {
     switch (data.state) {
       case 'loading':
-        return (
-          <>
-            <div className="spinner" />
-            <span className="text">Analyzing...</span>
-          </>
-        );
-
+        return 'Analyzing...';
       case 'stay':
-        return (
-          <>
-            <ThumbsUp weight="bold" className="icon" />
-            <span className="text">Stay</span>
-            {data.confidence && <span className="confidence">{data.confidence}%</span>}
-          </>
-        );
-
+        return `Stay`;
       case 'depends':
-        return (
-          <>
-            <Question weight="bold" className="icon" />
-            <span className="text">Questionable</span>
-            {data.confidence && <span className="confidence">{data.confidence}%</span>}
-          </>
-        );
-
+        return `Questionable`;
       case 'do_not_stay':
-        return (
-          <>
-            <ThumbsDown weight="bold" className="icon" />
-            <span className="text">Do Not Stay</span>
-            {data.confidence && <span className="confidence">{data.confidence}%</span>}
-          </>
-        );
-
+        return `Do Not Stay`;
       case 'error':
-        return (
-          <>
-            <span className="icon">!</span>
-            <span className="text">{data.message || 'Error'}</span>
-          </>
-        );
-
+        return data.message || 'Error';
       case 'rate_limited':
-        return (
-          <>
-            <span className="icon">&#128274;</span>
-            <span className="text">Limit reached</span>
-          </>
-        );
-
+        return 'Limit reached';
       default:
-        return null;
+        return '';
+    }
+  };
+
+  const getVariant = () => {
+    switch (data.state) {
+      case 'stay':
+        return 'stay';
+      case 'depends':
+        return 'depends';
+      case 'do_not_stay':
+        return 'donotstay';
+      default:
+        return 'outline';
     }
   };
 
   return (
-    <div className={`badge ${data.state}`} onClick={handleClick}>
-      {renderContent()}
-    </div>
+    <Button
+      onClick={handleClick}
+      loading={data.state === 'loading'}
+      size="lg"
+      leadingIcon={getIcon()}
+      iconWeight="bold"
+      variant={getVariant()}
+      className="disabled:opacity-100"
+    >
+      <span>{getText()}</span>
+    </Button>
   );
 }
 

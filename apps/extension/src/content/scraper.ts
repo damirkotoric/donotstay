@@ -45,23 +45,11 @@ export function scrapeHotelInfo(): HotelInfo | null {
       document.querySelector('.hp_address_subtitle')?.textContent?.trim() ||
       '';
 
-    // Rating
-    const ratingText =
-      document.querySelector('[data-testid="review-score-component"] .a3b8729ab1')?.textContent?.trim() ||
-      document.querySelector('.bui-review-score__badge')?.textContent?.trim() ||
-      document.querySelector('[data-testid="review-score-right-component"]')?.textContent?.trim() ||
-      '0';
-    const rating = parseFloat(ratingText) || 0;
+    // Rating - try multiple strategies
+    const rating = extractRating();
 
-    // Review count - look specifically for "X review(s)" pattern to avoid capturing rating
-    const reviewCountText =
-      document.querySelector('[data-testid="review-score-component"] .abf093bdfe')?.textContent?.trim() ||
-      document.querySelector('.bui-review-score__text')?.textContent?.trim() ||
-      document.querySelector('[data-testid="review-score-right-component"]')?.parentElement?.textContent?.trim() ||
-      '0';
-    // Match number followed by "review" or "reviews" to avoid capturing rating score
-    const reviewCountMatch = reviewCountText.match(/(\d[\d,]*)\s*reviews?/i);
-    const reviewCount = reviewCountMatch ? parseInt(reviewCountMatch[1].replace(/,/g, ''), 10) : 0;
+    // Review count - try multiple strategies
+    const reviewCount = extractReviewCount();
 
     return {
       hotel_id: hotelId,
@@ -115,6 +103,170 @@ export function scrapeGraphQLParams(): GraphQLParams | null {
     console.error('DoNotStay: Error extracting GraphQL params', error);
     return null;
   }
+}
+
+/**
+ * Extract rating using multiple strategies
+ */
+function extractRating(): number {
+  // Strategy 1: Direct selectors (various Booking.com layouts)
+  const selectors = [
+    '[data-testid="review-score-component"] .a3b8729ab1',
+    '[data-testid="review-score-component"] [class*="d0522b"]', // Score badge
+    '.bui-review-score__badge',
+    '[data-testid="review-score-right-component"]',
+    '.review-score-badge',
+    '[class*="review-score"] [class*="badge"]',
+    // Aparthotel/apartment specific
+    '[data-testid="review-score-component"]',
+  ];
+
+  for (const selector of selectors) {
+    const el = document.querySelector(selector);
+    if (el) {
+      const text = el.textContent?.trim() || '';
+      // Extract first number that looks like a rating (1-10 scale, may have decimal)
+      const match = text.match(/\b(\d+\.?\d?)\b/);
+      if (match) {
+        const rating = parseFloat(match[1]);
+        // Valid Booking.com ratings are 1-10
+        if (rating >= 1 && rating <= 10) {
+          console.log(`DoNotStay: Found rating ${rating} via selector: ${selector}`);
+          return rating;
+        }
+      }
+    }
+  }
+
+  // Strategy 2: JSON-LD structured data
+  const jsonLdRating = extractRatingFromJsonLd();
+  if (jsonLdRating) {
+    console.log(`DoNotStay: Found rating ${jsonLdRating} via JSON-LD`);
+    return jsonLdRating;
+  }
+
+  // Strategy 3: Look for "Exceptional/Superb/Fabulous X.X" pattern anywhere
+  const scoreContainers = document.querySelectorAll('[class*="score"], [class*="review"], [class*="rating"]');
+  for (const container of scoreContainers) {
+    const text = container.textContent || '';
+    // Match patterns like "Exceptional 9.6" or "9.6 Exceptional"
+    const match = text.match(/(?:Exceptional|Superb|Fabulous|Very Good|Good|Pleasant|Review score|Wonderful)\s*(\d+\.?\d?)/i) ||
+                  text.match(/(\d+\.?\d?)\s*(?:Exceptional|Superb|Fabulous|Very Good|Good|Pleasant|Wonderful)/i);
+    if (match) {
+      const rating = parseFloat(match[1]);
+      if (rating >= 1 && rating <= 10) {
+        console.log(`DoNotStay: Found rating ${rating} via text pattern`);
+        return rating;
+      }
+    }
+  }
+
+  console.warn('DoNotStay: Could not extract rating, defaulting to 0');
+  return 0;
+}
+
+/**
+ * Extract rating from JSON-LD structured data
+ */
+function extractRatingFromJsonLd(): number | null {
+  const scripts = document.querySelectorAll('script[type="application/ld+json"]');
+  for (const script of scripts) {
+    try {
+      const data = JSON.parse(script.textContent || '');
+      // Check for aggregateRating in various schema types
+      const schemas = Array.isArray(data) ? data : [data];
+      for (const schema of schemas) {
+        if (schema.aggregateRating?.ratingValue) {
+          const rating = parseFloat(schema.aggregateRating.ratingValue);
+          if (!isNaN(rating) && rating >= 1 && rating <= 10) {
+            return rating;
+          }
+        }
+        // Also check nested structures
+        if (schema['@graph']) {
+          for (const item of schema['@graph']) {
+            if (item.aggregateRating?.ratingValue) {
+              const rating = parseFloat(item.aggregateRating.ratingValue);
+              if (!isNaN(rating) && rating >= 1 && rating <= 10) {
+                return rating;
+              }
+            }
+          }
+        }
+      }
+    } catch {
+      // Continue to next script
+    }
+  }
+  return null;
+}
+
+/**
+ * Extract review count using multiple strategies
+ */
+function extractReviewCount(): number {
+  // Strategy 1: Direct selectors
+  const selectors = [
+    '[data-testid="review-score-component"] .abf093bdfe',
+    '[data-testid="review-score-component"]',
+    '.bui-review-score__text',
+    '[data-testid="review-score-right-component"]',
+    '[class*="review-score"] [class*="text"]',
+    '[class*="reviews-count"]',
+  ];
+
+  for (const selector of selectors) {
+    const el = document.querySelector(selector);
+    if (el) {
+      const text = el.textContent || '';
+      // Match "X reviews" or "X review" pattern
+      const match = text.match(/(\d[\d,]*)\s*reviews?/i);
+      if (match) {
+        const count = parseInt(match[1].replace(/,/g, ''), 10);
+        if (count > 0) {
+          console.log(`DoNotStay: Found review count ${count} via selector: ${selector}`);
+          return count;
+        }
+      }
+    }
+  }
+
+  // Strategy 2: JSON-LD structured data
+  const scripts = document.querySelectorAll('script[type="application/ld+json"]');
+  for (const script of scripts) {
+    try {
+      const data = JSON.parse(script.textContent || '');
+      const schemas = Array.isArray(data) ? data : [data];
+      for (const schema of schemas) {
+        if (schema.aggregateRating?.reviewCount) {
+          const count = parseInt(schema.aggregateRating.reviewCount, 10);
+          if (!isNaN(count) && count > 0) {
+            console.log(`DoNotStay: Found review count ${count} via JSON-LD`);
+            return count;
+          }
+        }
+      }
+    } catch {
+      // Continue
+    }
+  }
+
+  // Strategy 3: Look for "Guest reviews (X)" in tabs
+  const tabs = document.querySelectorAll('[class*="tab"], [role="tab"]');
+  for (const tab of tabs) {
+    const text = tab.textContent || '';
+    const match = text.match(/reviews?\s*\((\d[\d,]*)\)/i);
+    if (match) {
+      const count = parseInt(match[1].replace(/,/g, ''), 10);
+      if (count > 0) {
+        console.log(`DoNotStay: Found review count ${count} via tab`);
+        return count;
+      }
+    }
+  }
+
+  console.warn('DoNotStay: Could not extract review count, defaulting to 0');
+  return 0;
 }
 
 /**

@@ -3,9 +3,21 @@ import type { GraphQLParams } from './scraper';
 
 const GRAPHQL_ENDPOINT = 'https://www.booking.com/dml/graphql';
 const REVIEW_LIST_URL = 'https://www.booking.com/reviewlist.en-gb.html';
-const MAX_REVIEWS = 100;
+const MAX_REVIEWS = 200;
+const HIGH_SCORE_RATIO = 0.25; // 25% of reviews should be high-scoring for balance
 const REVIEWS_PER_REQUEST = 50;
 const REVIEWS_PER_HTML_PAGE = 25;
+
+/**
+ * Calculate detail score for a review based on text length
+ * Longer reviews = more signal = higher priority
+ */
+function getDetailScore(review: ScrapedReview): number {
+  const prosLength = review.pros?.length || 0;
+  const consLength = review.cons?.length || 0;
+  const textLength = review.text?.length || 0;
+  return prosLength + consLength + textLength;
+}
 
 interface GraphQLReview {
   id: string;
@@ -80,42 +92,92 @@ export async function fetchReviewsViaGraphQL(params: GraphQLParams): Promise<Scr
 
 /**
  * Try to fetch reviews via GraphQL API
+ * Fetches from multiple sources and selects the most detailed reviews
+ * with ~25% being high-scoring for balance
  */
 async function tryGraphQL(params: GraphQLParams): Promise<ScrapedReview[]> {
-  const allReviews: ScrapedReview[] = [];
   const seenIds = new Set<string>();
+  const lowScorePool: ScrapedReview[] = [];
+  const recentPool: ScrapedReview[] = [];
+  const highScorePool: ScrapedReview[] = [];
 
-  const addReviews = (reviews: ScrapedReview[]) => {
+  const dedupeAndAdd = (reviews: ScrapedReview[], pool: ScrapedReview[]) => {
     for (const review of reviews) {
       const key = `${review.author}:${review.date}:${review.score}`;
-      if (!seenIds.has(key) && allReviews.length < MAX_REVIEWS) {
+      if (!seenIds.has(key)) {
         seenIds.add(key);
-        allReviews.push(review);
+        pool.push(review);
       }
     }
   };
 
   try {
-    // Fetch low-scoring reviews first (most important for our analysis)
-    console.log('DoNotStay: Fetching low-scoring reviews via GraphQL...');
-    const lowScoreReviews = await fetchReviewPage(params, 'LOWEST_SCORE', 0);
-    addReviews(lowScoreReviews);
+    // Fetch from all sources in parallel for speed
+    console.log('DoNotStay: Fetching reviews from multiple sources via GraphQL...');
+    const [lowScore1, recent, highScore] = await Promise.all([
+      fetchReviewPage(params, 'LOWEST_SCORE', 0),
+      fetchReviewPage(params, 'MOST_RECENT', 0),
+      fetchReviewPage(params, 'HIGHEST_SCORE', 0),
+    ]);
 
-    // Fetch recent reviews
-    if (allReviews.length < MAX_REVIEWS) {
-      console.log('DoNotStay: Fetching recent reviews via GraphQL...');
-      const recentReviews = await fetchReviewPage(params, 'MOST_RECENT', 0);
-      addReviews(recentReviews);
+    dedupeAndAdd(lowScore1, lowScorePool);
+    dedupeAndAdd(recent, recentPool);
+    dedupeAndAdd(highScore, highScorePool);
+
+    // Fetch more low-scoring if we got a full page (likely more available)
+    if (lowScore1.length === REVIEWS_PER_REQUEST) {
+      const lowScore2 = await fetchReviewPage(params, 'LOWEST_SCORE', REVIEWS_PER_REQUEST);
+      dedupeAndAdd(lowScore2, lowScorePool);
     }
 
-    // Fetch more low-scoring if needed
-    if (allReviews.length < MAX_REVIEWS && lowScoreReviews.length === REVIEWS_PER_REQUEST) {
-      const moreLowScore = await fetchReviewPage(params, 'LOWEST_SCORE', REVIEWS_PER_REQUEST);
-      addReviews(moreLowScore);
+    console.log(`DoNotStay: Raw pools - Low: ${lowScorePool.length}, Recent: ${recentPool.length}, High: ${highScorePool.length}`);
+
+    // Now select the best reviews:
+    // 1. Sort each pool by detail (longest reviews first)
+    // 2. Take ~25% from high-scoring pool
+    // 3. Fill rest from low-score and recent pools, prioritizing detail
+
+    const sortByDetail = (a: ScrapedReview, b: ScrapedReview) => getDetailScore(b) - getDetailScore(a);
+
+    lowScorePool.sort(sortByDetail);
+    recentPool.sort(sortByDetail);
+    highScorePool.sort(sortByDetail);
+
+    const finalReviews: ScrapedReview[] = [];
+    const finalIds = new Set<string>();
+
+    const addToFinal = (review: ScrapedReview): boolean => {
+      const key = `${review.author}:${review.date}:${review.score}`;
+      if (!finalIds.has(key) && finalReviews.length < MAX_REVIEWS) {
+        finalIds.add(key);
+        finalReviews.push(review);
+        return true;
+      }
+      return false;
+    };
+
+    // Add high-scoring reviews first (up to 25% of MAX_REVIEWS)
+    const highScoreTarget = Math.floor(MAX_REVIEWS * HIGH_SCORE_RATIO);
+    for (const review of highScorePool) {
+      if (finalReviews.length >= highScoreTarget) break;
+      addToFinal(review);
+    }
+    console.log(`DoNotStay: Added ${finalReviews.length} high-scoring reviews`);
+
+    // Fill remaining with low-score reviews (prioritized)
+    for (const review of lowScorePool) {
+      if (finalReviews.length >= MAX_REVIEWS) break;
+      addToFinal(review);
     }
 
-    console.log(`DoNotStay: Total unique reviews fetched via GraphQL: ${allReviews.length}`);
-    return allReviews;
+    // Fill any remaining slots with recent reviews
+    for (const review of recentPool) {
+      if (finalReviews.length >= MAX_REVIEWS) break;
+      addToFinal(review);
+    }
+
+    console.log(`DoNotStay: Final selection: ${finalReviews.length} reviews (targeting ${highScoreTarget} high-scoring)`);
+    return finalReviews;
   } catch (error) {
     console.error('DoNotStay: Error fetching reviews via GraphQL:', error);
     return [];
@@ -206,10 +268,13 @@ function transformReview(review: GraphQLReview): ScrapedReview | null {
 
 /**
  * Fetch reviews by scraping HTML pages (fallback when GraphQL fails)
+ * Also fetches high-scoring reviews and prioritizes detailed ones
  */
 async function fetchReviewsViaHtml(countryCode: string): Promise<ScrapedReview[]> {
-  const allReviews: ScrapedReview[] = [];
   const seenIds = new Set<string>();
+  const lowScorePool: ScrapedReview[] = [];
+  const recentPool: ScrapedReview[] = [];
+  const highScorePool: ScrapedReview[] = [];
 
   // Extract pagename from current URL
   const pagenameMatch = window.location.pathname.match(/\/hotel\/[a-z]{2}\/([^/.?]+)/);
@@ -220,46 +285,82 @@ async function fetchReviewsViaHtml(countryCode: string): Promise<ScrapedReview[]
     return [];
   }
 
-  const addReviews = (reviews: ScrapedReview[]) => {
+  const dedupeAndAdd = (reviews: ScrapedReview[], pool: ScrapedReview[]) => {
     for (const review of reviews) {
       const key = `${review.author}:${review.date}:${review.score}`;
-      if (!seenIds.has(key) && allReviews.length < MAX_REVIEWS) {
+      if (!seenIds.has(key)) {
         seenIds.add(key);
-        allReviews.push(review);
+        pool.push(review);
       }
     }
   };
 
   try {
-    // Fetch low-scoring reviews first
-    console.log('DoNotStay: Fetching low-scoring reviews via HTML...');
-    const lowScoreReviews = await fetchHtmlReviewPage(countryCode, pagename, 0, 'f_score_asc');
-    addReviews(lowScoreReviews);
+    // Fetch from multiple sources
+    console.log('DoNotStay: Fetching reviews from multiple sources via HTML...');
 
-    // Fetch more low-scoring if we got a full page
-    if (allReviews.length < MAX_REVIEWS && lowScoreReviews.length === REVIEWS_PER_HTML_PAGE) {
-      const moreLowScore = await fetchHtmlReviewPage(countryCode, pagename, REVIEWS_PER_HTML_PAGE, 'f_score_asc');
-      addReviews(moreLowScore);
+    // Low-scoring reviews
+    const lowScore1 = await fetchHtmlReviewPage(countryCode, pagename, 0, 'f_score_asc');
+    dedupeAndAdd(lowScore1, lowScorePool);
+
+    if (lowScore1.length === REVIEWS_PER_HTML_PAGE) {
+      const lowScore2 = await fetchHtmlReviewPage(countryCode, pagename, REVIEWS_PER_HTML_PAGE, 'f_score_asc');
+      dedupeAndAdd(lowScore2, lowScorePool);
     }
 
-    // Fetch recent reviews
-    if (allReviews.length < MAX_REVIEWS) {
-      console.log('DoNotStay: Fetching recent reviews via HTML...');
-      const recentReviews = await fetchHtmlReviewPage(countryCode, pagename, 0, 'f_recent_desc');
-      addReviews(recentReviews);
+    // Recent reviews
+    const recent = await fetchHtmlReviewPage(countryCode, pagename, 0, 'f_recent_desc');
+    dedupeAndAdd(recent, recentPool);
+
+    // High-scoring reviews (f_score_desc = highest first)
+    const highScore = await fetchHtmlReviewPage(countryCode, pagename, 0, 'f_score_desc');
+    dedupeAndAdd(highScore, highScorePool);
+
+    console.log(`DoNotStay: Raw pools - Low: ${lowScorePool.length}, Recent: ${recentPool.length}, High: ${highScorePool.length}`);
+
+    // Sort each pool by detail (longest reviews first)
+    const sortByDetail = (a: ScrapedReview, b: ScrapedReview) => getDetailScore(b) - getDetailScore(a);
+    lowScorePool.sort(sortByDetail);
+    recentPool.sort(sortByDetail);
+    highScorePool.sort(sortByDetail);
+
+    const finalReviews: ScrapedReview[] = [];
+    const finalIds = new Set<string>();
+
+    const addToFinal = (review: ScrapedReview): boolean => {
+      const key = `${review.author}:${review.date}:${review.score}`;
+      if (!finalIds.has(key) && finalReviews.length < MAX_REVIEWS) {
+        finalIds.add(key);
+        finalReviews.push(review);
+        return true;
+      }
+      return false;
+    };
+
+    // Add high-scoring reviews first (up to 25%)
+    const highScoreTarget = Math.floor(MAX_REVIEWS * HIGH_SCORE_RATIO);
+    for (const review of highScorePool) {
+      if (finalReviews.length >= highScoreTarget) break;
+      addToFinal(review);
     }
 
-    // Fetch more recent if needed
-    if (allReviews.length < MAX_REVIEWS && allReviews.length > 0) {
-      const moreRecent = await fetchHtmlReviewPage(countryCode, pagename, REVIEWS_PER_HTML_PAGE, 'f_recent_desc');
-      addReviews(moreRecent);
+    // Fill with low-score reviews
+    for (const review of lowScorePool) {
+      if (finalReviews.length >= MAX_REVIEWS) break;
+      addToFinal(review);
     }
 
-    console.log(`DoNotStay: Total unique reviews fetched via HTML: ${allReviews.length}`);
-    return allReviews;
+    // Fill remaining with recent reviews
+    for (const review of recentPool) {
+      if (finalReviews.length >= MAX_REVIEWS) break;
+      addToFinal(review);
+    }
+
+    console.log(`DoNotStay: Final selection: ${finalReviews.length} reviews via HTML`);
+    return finalReviews;
   } catch (error) {
     console.error('DoNotStay: Error in HTML scraping:', error);
-    return allReviews;
+    return [];
   }
 }
 

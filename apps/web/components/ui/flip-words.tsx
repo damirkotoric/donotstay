@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +14,7 @@ export const FlipWords = ({
 }) => {
   const [currentWord, setCurrentWord] = useState(words[0]);
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
+  const isFirstRender = useRef(true);
 
   const startAnimation = useCallback(() => {
     const word = words[words.indexOf(currentWord) + 1] || words[0];
@@ -28,6 +29,10 @@ export const FlipWords = ({
       }, duration);
   }, [isAnimating, duration, startAnimation]);
 
+  useEffect(() => {
+    isFirstRender.current = false;
+  }, []);
+
   return (
     <span className="inline-block relative">
       <AnimatePresence
@@ -37,7 +42,7 @@ export const FlipWords = ({
         }}
       >
         <motion.span
-          initial={{
+          initial={isFirstRender.current ? false : {
             opacity: 0,
             y: 10,
           }}
@@ -58,7 +63,7 @@ export const FlipWords = ({
           {currentWord.split("").map((letter, letterIndex) => (
             <motion.span
               key={currentWord + letterIndex}
-              initial={{ opacity: 0, y: 10, filter: "blur(4px)" }}
+              initial={isFirstRender.current ? false : { opacity: 0, y: 10, filter: "blur(4px)" }}
               animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
               transition={{
                 delay: letterIndex * 0.03,

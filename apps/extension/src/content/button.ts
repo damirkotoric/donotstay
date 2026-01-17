@@ -6,7 +6,12 @@ function getIframeUrl(path: string): string {
   return DEV_MODE ? `${DEV_SERVER_URL}/${path}` : chrome.runtime.getURL(path);
 }
 
-export type ButtonState = 'idle' | 'loading';
+export type ButtonState = 'idle' | 'loading' | 'stay' | 'depends' | 'do_not_stay' | 'error' | 'rate_limited';
+
+export interface ButtonPayload {
+  state: ButtonState;
+  message?: string;
+}
 
 let buttonContainer: HTMLElement | null = null;
 let buttonIframe: HTMLIFrameElement | null = null;
@@ -51,10 +56,10 @@ function handleButtonMessage(event: MessageEvent): void {
 /**
  * Update button state
  */
-export function updateButton(state: ButtonState): void {
+export function updateButton(payload: ButtonPayload): void {
   if (buttonIframe?.contentWindow) {
     buttonIframe.contentWindow.postMessage(
-      { type: 'DONOTSTAY_BUTTON_UPDATE', state },
+      { type: 'DONOTSTAY_BUTTON_UPDATE', payload },
       '*'
     );
   }

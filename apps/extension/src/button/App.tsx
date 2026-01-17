@@ -1,15 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Button } from '@donotstay/ui';
+import { ThumbsUp, ThumbsDown, Question, Warning, Lock } from '@phosphor-icons/react';
 
-type ButtonState = 'idle' | 'loading';
+type ButtonState = 'idle' | 'loading' | 'stay' | 'depends' | 'do_not_stay' | 'error' | 'rate_limited';
+
+interface ButtonData {
+  state: ButtonState;
+  message?: string;
+}
 
 function App() {
-  const [state, setState] = useState<ButtonState>('idle');
+  const [data, setData] = useState<ButtonData>({ state: 'idle' });
 
   useEffect(() => {
-    // Listen for messages from content script
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'DONOTSTAY_BUTTON_UPDATE') {
-        setState(event.data.state);
+        setData(event.data.payload || { state: event.data.state });
       }
     };
 
@@ -18,60 +24,81 @@ function App() {
   }, []);
 
   const handleClick = () => {
-    // Notify content script that button was clicked
     window.parent.postMessage({ type: 'DONOTSTAY_BUTTON_CLICK' }, '*');
   };
 
+  const getIcon = () => {
+    switch (data.state) {
+      case 'stay':
+        return ThumbsUp;
+      case 'depends':
+        return Question;
+      case 'do_not_stay':
+        return ThumbsDown;
+      case 'error':
+        return Warning;
+      case 'rate_limited':
+        return Lock;
+      default:
+        return undefined;
+    }
+  };
+
+  const getText = () => {
+    switch (data.state) {
+      case 'loading':
+        return 'Analyzing...';
+      case 'stay':
+        return 'Stay';
+      case 'depends':
+        return 'Questionable';
+      case 'do_not_stay':
+        return 'Do Not Stay';
+      case 'error':
+        return data.message || 'Error';
+      case 'rate_limited':
+        return 'Limit reached';
+      default:
+        return 'Check accommodation';
+    }
+  };
+
+  const getVariant = () => {
+    switch (data.state) {
+      case 'stay':
+        return 'stay';
+      case 'depends':
+        return 'depends';
+      case 'do_not_stay':
+        return 'donotstay';
+      default:
+        return 'outline';
+    }
+  };
+
+  const isIdle = data.state === 'idle';
+  const isLoading = data.state === 'loading';
+
   return (
-    <button
-      onClick={handleClick}
-      disabled={state === 'loading'}
-      className="check-button"
-    >
-      {state === 'loading' ? (
-        <>
-          <svg
-            className="spinner"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="spinner-track"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="spinner-head"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            />
-          </svg>
-          Analyzing...
-        </>
-      ) : (
-        <>
-          <svg
-            className="search-icon"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={2}
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
-            />
-          </svg>
-          Check accommodation
-        </>
-      )}
-    </button>
+    <div className="pr-4 pb-4">
+      <Button
+        onClick={handleClick}
+        loading={isLoading}
+        size="lg"
+        leadingIcon={getIcon()}
+        iconWeight="bold"
+        variant={getVariant()}
+        className="shadow-lg disabled:opacity-100"
+      >
+        {isIdle && (
+          <div className="relative size-5">
+            <ThumbsDown weight="fill" className="absolute bottom-0 right-0 size-3.5 text-verdict-donotstay" />
+            <ThumbsUp weight="fill" className="absolute top-0 left-0 size-3.5 text-verdict-stay [filter:drop-shadow(1px_0_0_var(--color-background))_drop-shadow(-1px_0_0_var(--color-background))_drop-shadow(0_1px_0_var(--color-background))_drop-shadow(0_-1px_0_var(--color-background))]" />
+          </div>
+        )}
+        <span>{getText()}</span>
+      </Button>
+    </div>
   );
 }
 

@@ -1,7 +1,6 @@
 import { scrapeHotelInfo, scrapeGraphQLParams } from './scraper';
 import { fetchReviewsViaGraphQL } from './reviewFetcher';
-import { injectButton, removeButton } from './button';
-import { injectBadge, updateBadge, type BadgeState } from './badge';
+import { injectButton, updateButton, type ButtonState } from './button';
 import { injectSidebar, showSidebar, hideSidebar, updateSidebar } from './sidebar';
 import type { AnalyzeResponse, ApiError, HotelInfo, ScrapedReview } from '@donotstay/shared';
 
@@ -13,27 +12,15 @@ function injectStyles() {
   style.textContent = `
     #donotstay-button-container {
       position: fixed;
-      bottom: 24px;
-      right: 24px;
-      z-index: 999999;
+      bottom: 0;
+      right: 0;
+      z-index: 999997;
     }
     #donotstay-button-iframe {
       border: none;
       background: transparent;
       width: 280px;
-      height: 64px;
-    }
-    #donotstay-badge-container {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      z-index: 999999;
-    }
-    #donotstay-badge-iframe {
-      border: none;
-      background: transparent;
-      width: 220px;
-      height: 50px;
+      height: 80px;
     }
     #donotstay-sidebar-container {
       position: fixed;
@@ -41,7 +28,7 @@ function injectStyles() {
       right: 0;
       width: 480px;
       height: 100vh;
-      z-index: 999998;
+      z-index: 999999;
       transform: translateX(100%);
       transition: transform 0.3s ease-out;
     }
@@ -59,7 +46,7 @@ function injectStyles() {
       width: 100vw;
       height: 100vh;
       background: rgba(0, 0, 0, 0.3);
-      z-index: 999997;
+      z-index: 999998;
       opacity: 0;
       visibility: hidden;
       transition: opacity 0.3s, visibility 0.3s;
@@ -133,12 +120,16 @@ async function init() {
 }
 
 async function handleButtonClick() {
+  // If we already have a verdict, just open the sidebar
+  if (currentVerdict) {
+    showSidebar();
+    return;
+  }
+
   if (isAnalyzing) return;
 
-  // Remove button immediately and show loading badge
-  removeButton();
-  injectBadge(); // No click handler during loading
-  updateBadge({ state: 'loading' });
+  // Update button to loading state
+  updateButton({ state: 'loading' });
 
   await analyzeHotel();
 }
@@ -155,7 +146,7 @@ async function analyzeHotel() {
 
     // Use prefetched data or show specific error
     if (!prefetchedData) {
-      updateBadge({ state: 'error', message: prefetchError || 'Could not load hotel data' });
+      updateButton({ state: 'error', message: prefetchError || 'Could not load hotel data' });
       return;
     }
 
@@ -174,7 +165,7 @@ async function analyzeHotel() {
 
     // Handle null/undefined response
     if (!response) {
-      updateBadge({ state: 'error', message: 'No response from API' });
+      updateButton({ state: 'error', message: 'No response from API' });
       return;
     }
 
@@ -183,45 +174,36 @@ async function analyzeHotel() {
       const error = response as ApiError;
 
       if (error.code === 'RATE_LIMITED') {
-        // Rate limited - make badge clickable to show details
-        injectBadge(handleBadgeClick);
-        updateBadge({ state: 'rate_limited' });
+        updateButton({ state: 'rate_limited' });
         updateSidebar({ type: 'rate_limited', rate_limit: error.rate_limit });
         // Automatically open sidebar to show rate limit info
         showSidebar();
       } else if (error.code === 'NO_REVIEWS') {
-        // No reviews found - not clickable
-        updateBadge({ state: 'error', message: 'No reviews found' });
+        updateButton({ state: 'error', message: 'No reviews found' });
       } else {
-        // Other errors - not clickable
-        updateBadge({ state: 'error', message: error.error });
+        updateButton({ state: 'error', message: error.error });
       }
       return;
     }
 
-    // Success - make badge clickable to show verdict details
+    // Success - update button with verdict
     currentVerdict = response as AnalyzeResponse;
-    injectBadge(handleBadgeClick);
 
     const verdictState = getVerdictState(currentVerdict.verdict);
-    updateBadge({
-      state: verdictState,
-      verdict: currentVerdict.verdict,
-      confidence: currentVerdict.confidence,
-    });
+    updateButton({ state: verdictState });
     updateSidebar({ type: 'verdict', verdict: currentVerdict });
 
     // Automatically open sidebar to show the verdict
     showSidebar();
   } catch (error) {
     console.error('DoNotStay: Analysis error', error);
-    updateBadge({ state: 'error', message: 'Something went wrong' });
+    updateButton({ state: 'error', message: 'Something went wrong' });
   } finally {
     isAnalyzing = false;
   }
 }
 
-function getVerdictState(verdict: string): BadgeState {
+function getVerdictState(verdict: string): ButtonState {
   switch (verdict) {
     case 'Stay':
       return 'stay';
@@ -232,10 +214,6 @@ function getVerdictState(verdict: string): BadgeState {
     default:
       return 'depends';
   }
-}
-
-function handleBadgeClick() {
-  showSidebar();
 }
 
 function handleSidebarClose() {

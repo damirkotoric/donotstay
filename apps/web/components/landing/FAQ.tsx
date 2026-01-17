@@ -22,7 +22,7 @@ const faqs = [
   {
     question: 'Can I get a refund?',
     answer:
-      'Yes, within 7 days of purchase, no questions asked. Contact support and we will process your refund.',
+      'Yes, within 7 days of purchase, no questions asked. Contact mail@donotsay.app and we will process your refund.',
   },
   {
     question: 'What if the verdict is wrong?',

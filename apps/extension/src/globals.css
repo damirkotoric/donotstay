@@ -1,0 +1,5 @@
+/* Import shared styles from @donotstay/ui */
+@import "@donotstay/ui/globals.css";
+
+/* Tell Tailwind to scan the UI package for classes */
+@source "../../../packages/ui/src";

@@ -26,7 +26,7 @@ const plans = [
     features: [
       'Unlimited checks',
       'Full red flag breakdown',
-      'All personas + evidence',
+      'All personas',
       'Follow-up questions (coming next)',
       `Annual: $${siteConfig.pricing.pro.annualPrice}/year (save 17%)`,
     ],

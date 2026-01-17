@@ -1,6 +1,6 @@
 import type { Verdict } from '@donotstay/shared';
 import { AnimatedCircularProgressBar } from '@donotstay/ui';
-import { ThumbsDown } from '@phosphor-icons/react';
+import { ThumbsDown, ThumbsUp, Question } from '@phosphor-icons/react';
 
 interface VerdictCardProps {
   verdict: Verdict;
@@ -48,17 +48,20 @@ function VerdictCard({ verdict, oneLiner, confidenceScore, reviewCount }: Verdic
     <div className={`border shadow-md rounded-2xl overflow-hidden ${getStyles()}`}>
       <div className="p-6">
         <div>
-          {verdict === 'Do Not Stay' ? (
-            <div className="inline-flex items-center gap-2 bg-verdict-donotstay text-white px-3 py-1.5 rounded-full mb-3">
-              <ThumbsDown weight="bold" className="w-4 h-4 flex-shrink-0" />
-              <span className="text-sm font-bold">{verdict}</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3 mb-1">
-              <ThumbsDown weight="bold" className="w-8 h-8 flex-shrink-0" />
-              <div className="text-lg font-bold">{verdict}</div>
-            </div>
-          )}
+          <div className={`inline-flex items-center gap-2 text-white px-3 py-1.5 rounded-full mb-3 ${
+            verdict === 'Stay' ? 'bg-verdict-stay' :
+            verdict === 'Questionable' ? 'bg-verdict-depends' :
+            'bg-verdict-donotstay'
+          }`}>
+            {verdict === 'Stay' ? (
+              <ThumbsUp weight="bold" className="w-5 h-5 flex-shrink-0" />
+            ) : verdict === 'Questionable' ? (
+              <Question weight="bold" className="w-5 h-5 flex-shrink-0" />
+            ) : (
+              <ThumbsDown weight="bold" className="w-5 h-5 flex-shrink-0" />
+            )}
+            <span className="text-sm font-bold">{verdict}</span>
+          </div>
           <div className="text-3xl font-black">{oneLiner}</div>
         </div>
         <div className="relative flex text-foreground items-center mt-4 pt-4 gap-4">
