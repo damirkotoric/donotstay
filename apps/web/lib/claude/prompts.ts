@@ -15,8 +15,13 @@ const ISSUE_PATTERNS: Record<string, { keywords: RegExp; severity: Severity; cat
     category: 'health',
   },
   rodents: {
-    keywords: /\b(mouse|mice|rat|rodent|cockroach|roach|pest|infestation)\b/i,
+    keywords: /\b(mouse|mice|rat|rats|rodent|cockroach|roaches|roach|pest\s*infestation|infestation)\b/i,
     severity: 'critical',
+    category: 'health',
+  },
+  insects: {
+    keywords: /\b(ant|ants|spider|spiders|insect|insects|bug|bugs|crawl|crawling|critter|critters|earthworm|worm)\b/i,
+    severity: 'high',
     category: 'health',
   },
   scam: {
@@ -115,10 +120,6 @@ export interface PreComputedAnalysis {
   reviewsAnalyzed: number;
   totalReviewsOnPlatform: number;
   detectedIssues: DetectedIssue[];
-  hasCriticalFlags: boolean;
-  highSeverityComplaintRate: number; // Max complaint rate among HIGH severity issues
-  suggestedVerdict: 'Stay' | 'Questionable' | 'Do Not Stay';
-  verdictReasoning: string;
 }
 
 function classifyComplaintRate(severity: Severity, rate: number): ComplaintClassification {
@@ -145,96 +146,6 @@ function getRatingTier(rating: number): 'excellent' | 'good' | 'moderate' | 'poo
   if (rating >= 8.0) return 'good';
   if (rating >= 7.0) return 'moderate';
   return 'poor';
-}
-
-function suggestVerdict(
-  rating: number,
-  hasCriticalFlags: boolean,
-  detectedIssues: DetectedIssue[]
-): { verdict: 'Stay' | 'Questionable' | 'Do Not Stay'; reasoning: string } {
-  // Get max complaint rate for HIGH severity issues
-  const highSeverityIssues = detectedIssues.filter((i) => i.severity === 'high');
-  const maxHighRate = Math.max(0, ...highSeverityIssues.map((i) => i.complaintRate));
-
-  // Count significant patterns
-  const significantPatterns = detectedIssues.filter(
-    (i) => i.classification === 'significant_pattern'
-  ).length;
-  const notableIssues = detectedIssues.filter((i) => i.classification === 'notable').length;
-
-  // Critical flags always warrant concern
-  if (hasCriticalFlags) {
-    return {
-      verdict: 'Do Not Stay',
-      reasoning: 'Critical health/safety flags detected (mold, pests, scams, or safety concerns)',
-    };
-  }
-
-  // Rating 9.0+: Stay unless high complaint rates
-  if (rating >= 9.0) {
-    if (maxHighRate > 5) {
-      return {
-        verdict: 'Questionable',
-        reasoning: `High rating (${rating}) but significant complaint rate (${maxHighRate.toFixed(1)}%) on high-severity issues`,
-      };
-    }
-    if (maxHighRate >= 3) {
-      return {
-        verdict: 'Stay',
-        reasoning: `Excellent rating (${rating}) with some notable concerns (${maxHighRate.toFixed(1)}% complaint rate on high-severity issues)—note issues but recommend`,
-      };
-    }
-    return {
-      verdict: 'Stay',
-      reasoning: `Excellent rating (${rating}) with low complaint rates—minor issues are statistical noise`,
-    };
-  }
-
-  // Rating 8.0-8.9: Stay if complaint rates low
-  if (rating >= 8.0) {
-    if (maxHighRate > 5 || significantPatterns >= 2) {
-      return {
-        verdict: 'Questionable',
-        reasoning: `Good rating (${rating}) but multiple issue patterns detected`,
-      };
-    }
-    if (maxHighRate > 3) {
-      return {
-        verdict: 'Questionable',
-        reasoning: `Good rating (${rating}) with notable complaint rate (${maxHighRate.toFixed(1)}%) on high-severity issues`,
-      };
-    }
-    return {
-      verdict: 'Stay',
-      reasoning: `Good rating (${rating}) with acceptable complaint rates`,
-    };
-  }
-
-  // Rating 7.0-7.9: Questionable baseline
-  if (rating >= 7.0) {
-    if (significantPatterns >= 2 || maxHighRate > 10) {
-      return {
-        verdict: 'Do Not Stay',
-        reasoning: `Moderate rating (${rating}) with multiple significant patterns (${significantPatterns}) or high complaint rate (${maxHighRate.toFixed(1)}%)`,
-      };
-    }
-    return {
-      verdict: 'Questionable',
-      reasoning: `Moderate rating (${rating})—requires scrutiny of specific issues`,
-    };
-  }
-
-  // Rating <7.0: Scrutinize heavily
-  if (significantPatterns >= 1 || notableIssues >= 2) {
-    return {
-      verdict: 'Do Not Stay',
-      reasoning: `Low rating (${rating}) with confirmed issue patterns`,
-    };
-  }
-  return {
-    verdict: 'Questionable',
-    reasoning: `Low rating (${rating})—limited data but concerning baseline`,
-  };
 }
 
 export function analyzeReviews(hotel: HotelInfo, reviews: ScrapedReview[]): PreComputedAnalysis {
@@ -277,97 +188,36 @@ export function analyzeReviews(hotel: HotelInfo, reviews: ScrapedReview[]): PreC
     return b.complaintRate - a.complaintRate;
   });
 
-  const hasCriticalFlags = detectedIssues.some(
-    (i) => i.severity === 'critical' && i.mentionCount > 0
-  );
-  const highSeverityIssues = detectedIssues.filter((i) => i.severity === 'high');
-  const highSeverityComplaintRate = Math.max(0, ...highSeverityIssues.map((i) => i.complaintRate));
-
-  const { verdict, reasoning } = suggestVerdict(hotel.rating, hasCriticalFlags, detectedIssues);
-
   return {
     platformRating: hotel.rating,
     ratingTier: getRatingTier(hotel.rating),
     reviewsAnalyzed: totalReviews,
     totalReviewsOnPlatform: hotel.review_count,
     detectedIssues,
-    hasCriticalFlags,
-    highSeverityComplaintRate,
-    suggestedVerdict: verdict,
-    verdictReasoning: reasoning,
   };
 }
 
 function formatPreComputedAnalysis(analysis: PreComputedAnalysis): string {
   const lines: string[] = [
-    '## Pre-Computed Analysis',
+    '## Context',
     '',
-    `Platform Rating: ${analysis.platformRating} (${analysis.ratingTier.toUpperCase()})`,
+    `Platform Rating: ${analysis.platformRating}/10 (${analysis.ratingTier.toUpperCase()})`,
     `Reviews Analyzed: ${analysis.reviewsAnalyzed} of ${analysis.totalReviewsOnPlatform} total`,
-    `Critical Flags Detected: ${analysis.hasCriticalFlags ? 'YES' : 'No'}`,
-    `Max HIGH-Severity Complaint Rate: ${analysis.highSeverityComplaintRate.toFixed(1)}%`,
     '',
   ];
 
   if (analysis.detectedIssues.length > 0) {
-    lines.push('### Detected Issues (keyword-based scan):');
+    lines.push('### Keyword Scan Results (for reference, not definitive):');
     for (const issue of analysis.detectedIssues) {
-      const classificationLabel = {
-        significant_pattern: 'SIGNIFICANT PATTERN',
-        notable: 'NOTABLE',
-        isolated: 'ISOLATED',
-        noise: 'NOISE',
-      }[issue.classification];
-
       lines.push(
-        `- ${issue.issue}: ${issue.mentionCount} mentions (${issue.complaintRate.toFixed(1)}% rate) → ${classificationLabel} [${issue.severity.toUpperCase()}]`
+        `- "${issue.issue}": ${issue.mentionCount} mentions (${issue.complaintRate.toFixed(1)}% of reviews)`
       );
     }
     lines.push('');
+    lines.push('Note: This keyword scan may include false positives or miss issues. Use your judgment based on actual review content.');
   } else {
-    lines.push('### Detected Issues: None found via keyword scan');
-    lines.push('');
-  }
-
-  lines.push(`## VERDICT (CODE BASELINE): ${analysis.suggestedVerdict}`);
-  lines.push(`Reasoning: ${analysis.verdictReasoning}`);
-  lines.push('');
-
-  // Escalation/correction rules depend on rating tier
-  const falsePositiveRule = `
-FALSE POSITIVE CORRECTION: If the keyword scan triggered on a word out of context (e.g., "scam" used to describe room assignment, not fraud), you MAY downgrade the verdict to match reality. Set verdict_escalation to "Stay" or "Questionable" and explain the false positive in escalation_reason.`;
-
-  if (analysis.ratingTier === 'excellent') {
-    lines.push(
-      `VERDICT ADJUSTMENT RULES FOR EXCELLENT HOTELS (${analysis.platformRating} rating):
-- This hotel has EARNED trust through ${analysis.totalReviewsOnPlatform}+ reviews. Respect that.
-- You may ONLY escalate to "Do Not Stay" for CRITICAL health/safety issues: mold, pests, bedbugs, safety hazards, actual scams
-- Staff attitude, service complaints, or amenity issues can NEVER warrant "Do Not Stay" for a 9.0+ hotel
-- You may escalate to "Questionable" for persistent HIGH severity issues (noise, cleanliness, infrastructure) if complaint rate >10%
-- Isolated complaints are statistical noise at this rating level—note them but don't overweight
-${falsePositiveRule}
-- If you adjust the verdict, set "verdict_escalation" to the new verdict and explain in "escalation_reason"
-- If you agree with the code verdict, omit both fields`
-    );
-  } else if (analysis.ratingTier === 'good') {
-    lines.push(
-      `VERDICT ADJUSTMENT RULES FOR GOOD HOTELS (${analysis.platformRating} rating):
-- You may ESCALATE the verdict (Stay → Questionable, or Questionable → Do Not Stay) if you find strong justification
-- Valid escalation reasons: CRITICAL issues (health/safety), high complaint rates (>10%) on HIGH severity issues
-- Staff attitude alone cannot escalate to "Do Not Stay"—max is "Questionable"
-${falsePositiveRule}
-- If you adjust the verdict, set "verdict_escalation" to the new verdict and explain in "escalation_reason"
-- If you agree with the code verdict, omit both fields`
-    );
-  } else {
-    lines.push(
-      `VERDICT ADJUSTMENT RULES:
-- You may ESCALATE the verdict (Stay → Questionable, or Questionable → Do Not Stay) if you find strong justification the keyword scan missed
-- Valid escalation reasons: recent cluster of CRITICAL issues (bugs, mold, safety), context keywords missed, compounding issues
-${falsePositiveRule}
-- If you adjust the verdict, set "verdict_escalation" to the new verdict and explain in "escalation_reason"
-- If you agree with the code verdict, omit both fields`
-    );
+    lines.push('### Keyword Scan: No common issues detected');
+    lines.push('Note: This does not mean there are no issues—read the reviews carefully.');
   }
 
   return lines.join('\n');
@@ -377,117 +227,73 @@ export const SYSTEM_PROMPT = `You are DoNotStay, an AI that helps travelers avoi
 
 Your voice: a well-traveled, literary friend who has opinions and will roast a hotel while still being fair. Not corporate. Not dry. But never confusing—wit serves clarity, never competes with it.
 
-## Your Doctrine
-- One CRITICAL deal-breaker (safety, health, scams) outweighs everything else
-- Prioritize sleep, health, and safety above all else
-- Assume marketing inflation—look for repeated failure patterns
-- HIGH RATINGS EARN BENEFIT OF THE DOUBT: A 9.0+ rated hotel with 1000+ reviews has EARNED trust through thousands of satisfied guests. The sampling of reviews you see is biased toward negatives. Most guests loved it.
-- Never state facts. State confidence based on evidence.
-- Be calibrated. A 9.6 hotel with staff complaints is still a 9.6 hotel—96% of guests were satisfied. Note concerns, don't catastrophize them.
+## Your Job
+Read the reviews. Decide the verdict. You own this decision entirely.
 
-## Pre-Computed Analysis
-The user prompt includes a "Pre-Computed Analysis" section with:
-- Complaint rates already calculated for detected issues
-- Classification of each issue (SIGNIFICANT PATTERN, NOTABLE, ISOLATED, NOISE)
-- THE FINAL VERDICT (decided by code based on thresholds)
+## Verdict Options
+- **"Stay"**: Recommended. This is a good hotel.
+- **"Questionable"**: Mixed signals or notable concerns. Worth considering but research your specific needs.
+- **"Do Not Stay"**: Avoid. Serious health, safety, or systemic issues confirmed.
 
-YOUR JOB:
-- The code provides a BASELINE verdict based on complaint rate thresholds.
-- You may ESCALATE (make worse) but NEVER DOWNGRADE (make better).
-- Escalate only for strong reasons: recent CRITICAL issues the keywords missed, compounding patterns, safety concerns.
-- Match your tone to the FINAL verdict (baseline or escalated).
-- Use the complaint rates provided. Do NOT recalculate.
+## Decision Framework
 
-## Deal-Breakers (flag aggressively)
-- Noise: street noise, thin walls, neighbors, early morning disturbances, clubs/bars nearby
-- Sleep disruptors: uncomfortable beds, light pollution, temperature control issues
-- Health: mold, damp, mildew, bugs, insects, rodents, cleanliness issues
-- Safety: sketchy neighborhood, security concerns, scams, hidden fees
-- Infrastructure: AC/heating failures, hot water issues, WiFi unreliability, power outages
-- Accuracy: photos don't match reality, misleading descriptions
+**FIRST: Check for automatic "Do Not Stay" triggers (these override EVERYTHING):**
+- Nightclub/bar noise until late (even 2+ mentions) = "Do Not Stay" — structural, affects everyone, won't change
+- Recurring rats, cockroaches, or bedbugs = "Do Not Stay"
+- Mold, safety hazards, confirmed scams = "Do Not Stay"
+- Multiple complaints about dirty sheets, hair in beds, bathroom grime = "Do Not Stay"
 
-## Severity Assignment Rules
-CRITICAL severity is RESERVED for health and safety issues ONLY:
-- Mold, mildew, damp
-- Bed bugs, insects, rodents, pests
-- Safety hazards, dangerous conditions
-- Scams, fraud, hidden predatory fees
+If ANY of the above are present, verdict is "Do Not Stay". Full stop. Don't hedge with "Questionable". Rating doesn't matter.
 
-NEVER assign CRITICAL to:
-- Staff attitude, rudeness, or service quality (max: MEDIUM)
-- Amenity issues like gym, pool, parking (max: LOW)
-- WiFi, breakfast quality (max: MEDIUM)
-- Noise, cleanliness (max: HIGH)
+**THEN: For hotels without deal-breakers:**
 
-Match the pre-computed severities from the code. Don't inflate them.
+High ratings (9.0+) earn benefit of the doubt for lesser issues like staff attitude, WiFi, or breakfast complaints.
 
-## Recency Weighting
-Not all old complaints age the same. Apply different weights based on issue type:
+**Context for ambiguous issues:**
+- Ants in a tropical villa where guest left food out = expected, note but don't penalize
+- Spiders in a rural B&B = nature, not negligence
+- One-off complaint 2+ years ago = possibly resolved
+- Urban hotel with recurring insect problems = sanitation issue
 
-**Timeless issues (weight equally regardless of age):**
-- Structural: thin walls, noise from street/neighbors, building location near clubs/bars
-- Health hazards: mold, damp, mildew, pest infestations
-- Fundamental infrastructure: plumbing issues, room size, natural light, ventilation
+**Recency:**
+- Structural issues (thin walls, location noise) = timeless, weight equally
+- Staff/service complaints = discount if >18 months old
 
-**Time-sensitive issues (discount if >18 months old):**
-- Staff behavior, rudeness, unhelpfulness
-- Service quality, breakfast quality, restaurant issues
-- Management responsiveness
-- Cleanliness (staff-dependent, not structural)
-- WiFi speed (often upgraded)
+## Severity Rules
+CRITICAL = health/safety: mold, pests (rats/roaches/bedbugs), safety hazards, scams
+HIGH = bed/bathroom hygiene (dirty sheets, hair, crumbs, grimy bathrooms), noise, infrastructure failures
+MEDIUM = general untidiness, staff attitude, WiFi, breakfast, misleading photos
+LOW = amenity issues (gym, parking, elevator)
 
-**Possible remediation signals:**
-- If a structural issue appears in old reviews but stops appearing in recent ones, note this as "possibly addressed" but remain skeptical—some issues are seasonal or intermittent
-- Recent renovations mentioned in reviews can reset the clock on infrastructure issues
-
-When an issue is time-sensitive and only appears in reviews >18 months old, reduce its severity by one level and note the age in evidence.
-
-## Verdict Meanings (for tone guidance)
-- "Stay": RECOMMENDED. This is a good hotel. Your writing should be positive and affirming. Note any minor concerns as footnotes, but lead with what makes it good. A 9.0+ hotel with minor staff complaints still gets "Stay"—celebrate what works.
-- "Questionable": Proceed with caution—mixed signals or notable concerns. Your writing should be balanced. Worth considering but research your specific needs.
-- "Do Not Stay": Avoid this hotel—serious health, safety, or systemic issues confirmed. Your writing should be critical. Reserve this for genuine deal-breakers, not imperfect service.
+Note: "Cleanliness" spans HIGH to MEDIUM. Dirty sheets, bathroom grime, previous guests' residue = HIGH. Dusty surfaces, minor mess = MEDIUM.
 
 ## One-Liner Rules
-- Must answer: "What's the catch?" or "What makes it good?"
 - Maximum 5 words
-- For "Stay" verdicts: Lead with what's good. Can note minor caveat. Examples: "Great Location, Minor Staff Issues" / "Excellent, Some Noise" / "Highly Recommended"
-- For "Questionable"/"Do Not Stay": Focus on the problem. Examples: "Noise After Midnight" / "Mold Problem" / "Serious Cleanliness Issues"
+- Answer: "What's the catch?" or "What makes it good?"
+- For "Stay": Lead with what's good. "Great Location, Minor Staff Issues"
+- For problems: Focus on the issue. "Noise After Midnight" / "Recurring Pest Problem"
 - Clarity first, wit second
-- If it could be misread or needs explanation, rewrite it
-- Bad: "Sophie Deserves a Raise" / "Amenities Sold Separately" / "The Asterisk Hotel"
-
-## Issue Naming Rules
-- Use plain language
-- Say what's actually wrong
-- Good: "Gym is broken" / "Street noise at night" / "Some bathrooms smell"
-- Bad: "Gym is decorative" / "Bathrooms have opinions" / "Construction vibes"
 
 ## Confidence Calibration
-- 90-100: Clear pattern across many reviews. High certainty.
-- 70-89: Solid signal, some inconsistency.
-- 50-69: Mixed signals. Depends on user priorities.
-- Below 50: Insufficient data or conflicting evidence.
+- 90-100: Clear pattern across many reviews
+- 70-89: Solid signal, some inconsistency
+- 50-69: Mixed signals, depends on priorities
+- Below 50: Insufficient data
 
-Review count adjustment:
-- <50 reviews: Cap confidence at 70 unless issues are severe and consistent
-- 50-200 reviews: Cap confidence at 85
-- 200+ reviews: Full range available
+Adjust for review count:
+- <50 reviews: Cap at 70 unless issues are severe
+- 50-200 reviews: Cap at 85
+- 200+ reviews: Full range
 
-## Tone Guidelines
-- Sound like a smart friend, not a legal document
-- Personality is fine. Confusion is not.
-- You can be funny if the joke is instantly clear
-- Never sacrifice meaning for cleverness
-- Roast the hotel if it deserves it, but be fair`;
+## Tone
+Match your tone to your verdict:
+- "Stay": Positive, affirming. Celebrate what works, note concerns as footnotes.
+- "Questionable": Balanced. Present both sides.
+- "Do Not Stay": Critical. Be direct about problems.
 
-export interface BuildPromptResult {
-  prompt: string;
-  codeVerdict: 'Stay' | 'Questionable' | 'Do Not Stay';
-  verdictReasoning: string;
-}
+Sound like a smart friend, not a legal document. Roast if deserved, but be fair.`;
 
-export function buildUserPrompt(hotel: HotelInfo, reviews: ScrapedReview[]): BuildPromptResult {
-  // Pre-compute complaint rates and verdict (code decides the verdict)
+export function buildUserPrompt(hotel: HotelInfo, reviews: ScrapedReview[]): string {
   const analysis = analyzeReviews(hotel, reviews);
   const preComputedSection = formatPreComputedAnalysis(analysis);
 
@@ -505,7 +311,7 @@ export function buildUserPrompt(hotel: HotelInfo, reviews: ScrapedReview[]): Bui
     })
     .join('\n\n');
 
-  const prompt = `${preComputedSection}
+  return `${preComputedSection}
 
 ## Hotel Information
 Hotel: ${hotel.hotel_name}
@@ -515,35 +321,26 @@ Location: ${hotel.location}
 ${reviewsText}
 
 ## Output (JSON only, no markdown code blocks)
-IMPORTANT: Output raw JSON only. No \`\`\`json blocks. No explanation text. Just the JSON object.
+Output raw JSON only. No \`\`\`json blocks. No explanation text. Just the JSON object.
 Keep evidence arrays short (max 3 quotes per issue). Keep quotes concise (under 50 words each).
-CRITICAL: ALL quotes in evidence arrays MUST be in English. Translate any non-English quotes to English.
-
-Use the pre-computed complaint rates. For any ADDITIONAL issues you identify, calculate: (mentions / ${reviews.length} reviews) × 100.
+ALL quotes in evidence arrays MUST be in English. Translate any non-English quotes.
 
 {
-  "verdict_escalation": "<ONLY if escalating: 'Questionable' or 'Do Not Stay'. Omit if accepting code verdict>",
-  "escalation_reason": "<ONLY if escalating: 1 sentence explaining why. Omit otherwise>",
+  "verdict": "Stay" | "Questionable" | "Do Not Stay",
   "confidence": <0-100>,
-  "one_liner": "<max 5 words - must match the FINAL verdict tone>",
+  "one_liner": "<max 5 words>",
   "red_flags": [
     {
       "issue": "<plain, clear issue name>",
       "severity": "critical" | "high" | "medium" | "low",
       "mention_count": <number>,
-      "complaint_rate": <calculated percentage>,
+      "complaint_rate": <percentage of ${reviews.length} reviews>,
       "evidence": ["<max 3 short quotes, ALL IN ENGLISH>"],
       "last_reported": "<YYYY-MM-DD>",
-      "recency_note": "<short note like 'Possibly outdated' or 'Possibly remediated' - do NOT include time references since we display the date separately>"
+      "recency_note": "<optional: 'Possibly outdated' or 'Possibly remediated'>"
     }
   ],
   "avoid_if_you_are": ["<persona>", "<persona>"],
-  "bottom_line": "<2-3 sentences max - must match the verdict tone>"
+  "bottom_line": "<2-3 sentences max>"
 }`;
-
-  return {
-    prompt,
-    codeVerdict: analysis.suggestedVerdict,
-    verdictReasoning: analysis.verdictReasoning,
-  };
 }

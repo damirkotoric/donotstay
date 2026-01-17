@@ -51,12 +51,12 @@ export function Navbar() {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 px-4 pt-4 sm:px-6 lg:px-8">
+      <nav className="fixed top-0 left-0 right-0 z-50 px-2 pt-4 sm:px-6 lg:px-8">
         <div
-          className={`mx-auto max-w-[75rem] rounded-xl border px-4 transition-all duration-300 sm:px-6 ${
+          className={`mx-auto max-w-[75rem] rounded-xl border transition-all duration-300 sm:px-6 ${
             isScrolled
-              ? 'border-border/50 bg-background/80 shadow-lg backdrop-blur-md'
-              : 'border-transparent bg-transparent'
+              ? 'border-border/50 bg-background/80 px-4 shadow-lg backdrop-blur-md'
+              : 'px-2 border-transparent bg-transparent'
           }`}
         >
           <div className="flex h-14 items-center justify-between">

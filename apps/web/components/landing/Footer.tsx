@@ -1,4 +1,3 @@
-import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
 export function Footer() {
@@ -7,32 +6,30 @@ export function Footer() {
   return (
     <footer className="px-4 py-12 text-muted-foreground sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
-        <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
-          <div className="flex items-center gap-2">
-            <Logo size={28} />
-            <span className="text-xl font-bold text-foreground">DoNotStay</span>
-          </div>
-          <div className="flex gap-6 text-sm">
-            <a
-              href="/privacy"
-              className="font-medium"
-            >
-              Privacy Policy
-            </a>
-            <a href="/terms" className="font-medium">
-              Terms
-            </a>
-            <a
-              href="mailto:mail@donotstay.app"
-              className="font-medium"
-            >
-              Contact
-            </a>
-          </div>
-          <div className="flex items-center gap-12">
-            <div className="text-sm">
+        <div className="flex flex-col items-center justify-between gap-6 md:flex-row text-sm">
+          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8">
+            <div className="">
               &copy; {currentYear} DoNotStay. All rights reserved.
             </div>
+            <div className="flex gap-6">
+              <a
+                href="/privacy"
+                className="font-medium"
+              >
+                Privacy Policy
+              </a>
+              <a href="/terms" className="font-medium">
+                Terms
+              </a>
+              <a
+                href="mailto:mail@donotstay.app"
+                className="font-medium"
+              >
+                Contact
+              </a>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-12">
             <ThemeToggle />
           </div>
         </div>

@@ -9,6 +9,7 @@ const verdicts = [
     color: 'text-verdict-stay',
     bg: 'bg-verdict-stay-light',
     border: 'border-verdict-stay',
+    shadow: 'shadow-lg shadow-verdict-stay/20',
     description: 'No red flags. Book with confidence.',
   },
   {
@@ -17,6 +18,7 @@ const verdicts = [
     color: 'text-muted-foreground',
     bg: 'bg-muted',
     border: 'border-border',
+    shadow: '',
     description: 'Trade-offs exist. Check the details.',
   },
   {
@@ -25,6 +27,7 @@ const verdicts = [
     color: 'text-verdict-donotstay',
     bg: 'bg-verdict-donotstay-light',
     border: 'border-verdict-donotstay',
+    shadow: 'shadow-lg shadow-verdict-donotstay/20',
     description: 'Deal-breakers found. Keep looking.',
   },
 ];
@@ -46,7 +49,7 @@ export function VerdictExplainer() {
           {verdicts.map((item, index) => (
             <div
               key={index}
-              className={`${item.bg} ${item.border} rounded-2xl border-2 p-8 text-center`}
+              className={`${item.bg} ${item.border} ${item.shadow} rounded-2xl border-2 p-8 text-center`}
             >
               <div
                 className={`mb-4 inline-flex h-16 w-16 items-center justify-center ${item.color}`}

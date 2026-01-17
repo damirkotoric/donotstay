@@ -9,7 +9,7 @@ const rotatingWords = ['mold', 'thin walls', 'rude staff', 'noise', 'bedbugs', '
 
 export function Hero() {
   return (
-    <section className="bg-gradient-to-b from-muted to-background px-4 pt-40 pb-16 sm:px-6 lg:px-8">
+    <section className="bg-gradient-to-b from-muted to-background px-4 pt-28 lg:pt-40 pb-16 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
         <div className="grid items-center gap-12 md:grid-cols-2">
           {/* Text content - left side */}
@@ -19,7 +19,7 @@ export function Hero() {
               <FlipWords words={rotatingWords} className="text-primary" />{' '}
               before you book.
             </h1>
-            <p className="mt-4 text-xl text-muted-foreground">
+            <p className="mt-4 text-xl font-medium text-muted-foreground">
               We read the reviews. You get the verdict.
             </p>
             <div className="mt-8 flex flex-col gap-4 sm:flex-row">

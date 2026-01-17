@@ -32,11 +32,11 @@ export function ThemeToggle() {
       <span>Light</span>
       <button
         onClick={() => setTheme(isSystem ? 'light' : 'system')}
-        className="relative h-6 w-11 rounded-full bg-muted transition-colors"
+        className="relative h-6 w-11 rounded-full border border-border bg-neutral-200 transition-colors hover:bg-neutral-300 dark:bg-neutral-600 dark:hover:bg-neutral-600/80"
         aria-label={`Switch to ${isSystem ? 'light' : 'system'} theme`}
       >
         <span
-          className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+          className={`absolute top-[3px] h-4 w-4 rounded-full bg-white shadow-md transition-transform ${
             isSystem ? 'left-6' : 'left-1'
           }`}
         />

@@ -39,7 +39,7 @@ export function FAQ() {
   };
 
   return (
-    <section id="faq" className="px-4 py-30 sm:px-6 lg:px-8">
+    <section id="faq" className="px-4 sm:py-30 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-3xl">
         <div className="mb-16 text-center">
           <h2 className="text-3xl font-bold text-foreground sm:text-4xl">

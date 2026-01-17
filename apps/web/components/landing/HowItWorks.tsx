@@ -22,27 +22,27 @@ const steps = [
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="container mx-auto max-w-6xl rounded-xl bg-background border shadow-sm px-4 py-12 sm:px-6 lg:px-8 z-1 relative">
-      <div className="mx-auto max-w-6xl">
-        <div className="flex flex-col md:flex-row md:items-start gap-4 md:gap-6">
+    <section id="how-it-works" className="relative z-1 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl rounded-xl border bg-background p-6 shadow-sm sm:p-8">
+        <div className="flex flex-col items-center gap-2 md:flex-row md:items-start md:gap-4">
           {steps.map((step, index) => (
-            <div key={index} className="contents flex items-center">
-              <div className="flex gap-4 flex-1">
+            <div key={index} className="contents">
+              <div className="flex w-full gap-4 md:flex-1">
                 <div className="flex-shrink-0">
-                  <step.icon className="w-8 h-8 text-foreground" weight="duotone" />
+                  <step.icon className="h-8 w-8 text-foreground" weight="duotone" />
                 </div>
                 <div>
                   <h3 className="mb-2 text-lg font-semibold text-foreground">
                     {step.title}
                   </h3>
-                  <p className="text-muted-foreground text-sm">{step.description}</p>
+                  <p className="text-sm text-muted-foreground">{step.description}</p>
                 </div>
               </div>
               {index < steps.length - 1 && (
-                <div className="flex justify-center md:items-center p-2 md:py-0">
-                  <CaretDown className="w-5 h-5 text-muted-foreground md:hidden" weight="bold" />
-                  <CaretRight className="w-5 h-5 text-muted-foreground hidden md:block" weight="bold" />
-                </div>
+                <>
+                  <CaretDown className="my-2 h-5 w-5 text-muted-foreground md:hidden" weight="bold" />
+                  <CaretRight className="hidden h-5 w-5 flex-shrink-0 text-muted-foreground md:block" weight="bold" />
+                </>
               )}
             </div>
           ))}
