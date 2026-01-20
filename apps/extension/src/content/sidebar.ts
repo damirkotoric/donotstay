@@ -98,6 +98,15 @@ function handleSidebarMessage(event: MessageEvent): void {
       creditsUpdatedCallback();
     }
   }
+
+  // Handle start check from sidebar (close sidebar and trigger analysis)
+  if (event.data?.type === 'DONOTSTAY_START_CHECK') {
+    console.log('DoNotStay: Starting check from sidebar');
+    hideSidebar();
+    if (creditsUpdatedCallback) {
+      creditsUpdatedCallback();
+    }
+  }
 }
 
 /**

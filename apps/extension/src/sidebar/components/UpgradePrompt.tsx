@@ -16,6 +16,7 @@ function UpgradePrompt({ rateLimit: _rateLimit, onCreditsUpdated }: UpgradePromp
   const [initialCredits, setInitialCredits] = useState<number | null>(null);
   const [hasAttemptedCheckout, setHasAttemptedCheckout] = useState(false);
   const [isCheckingCredits, setIsCheckingCredits] = useState(false);
+  const [newCreditBalance, setNewCreditBalance] = useState<number | null>(null);
 
   // Check if credits have been added since we last showed this screen
   useEffect(() => {
@@ -45,6 +46,7 @@ function UpgradePrompt({ rateLimit: _rateLimit, onCreditsUpdated }: UpgradePromp
           // Check if credits increased OR if we now have credits when we had none
           if ((initialCredits !== null && response.user.credits_remaining > initialCredits) ||
               (initialCredits === 0 && response.user.credits_remaining > 0)) {
+            setNewCreditBalance(response.user.credits_remaining);
             setCheckoutState('success');
             onCreditsUpdated?.();
             return true;
@@ -85,6 +87,7 @@ function UpgradePrompt({ rateLimit: _rateLimit, onCreditsUpdated }: UpgradePromp
     try {
       const response = await chrome.runtime.sendMessage({ type: 'GET_AUTH_STATUS' });
       if (response?.user?.credits_remaining > 0) {
+        setNewCreditBalance(response.user.credits_remaining);
         setCheckoutState('success');
         onCreditsUpdated?.();
       }
@@ -141,14 +144,22 @@ function UpgradePrompt({ rateLimit: _rateLimit, onCreditsUpdated }: UpgradePromp
       <div className="flex flex-col items-center justify-center py-10 px-5 text-center">
         <div className="text-5xl mb-4">&#10003;</div>
         <div className="text-xl font-bold text-foreground mb-2">Payment Successful!</div>
-        <div className="text-sm text-muted-foreground mb-6">
+        <div className="text-sm text-muted-foreground mb-2">
           Your credits have been added to your account.
         </div>
+        {newCreditBalance !== null && (
+          <div className="text-2xl font-bold text-violet-500 mb-6">
+            {newCreditBalance} checks available
+          </div>
+        )}
         <button
           className="bg-gradient-to-br from-violet-500 to-violet-600 text-white border-none py-3.5 px-7 rounded-xl text-[15px] font-semibold cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-violet-500/30"
-          onClick={() => window.location.reload()}
+          onClick={() => {
+            // Close sidebar and start the check
+            window.parent.postMessage({ type: 'DONOTSTAY_START_CHECK' }, '*');
+          }}
         >
-          Continue Checking Hotels
+          Start Check
         </button>
       </div>
     );

@@ -11,22 +11,29 @@ export default function CheckoutSuccess() {
       fontFamily: 'system-ui, sans-serif',
       padding: '2rem',
       textAlign: 'center',
+      background: '#f9fafb',
     }}>
       <div style={{
         maxWidth: '400px',
         padding: '2rem',
         borderRadius: '12px',
-        background: '#d1fae5',
+        background: '#ffffff',
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
       }}>
-        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>&#10003;</div>
+        <img
+          src="/logo-donotstay.png"
+          alt="DoNotStay"
+          style={{ height: '32px', marginBottom: '1.5rem' }}
+        />
+        <div style={{ fontSize: '3rem', marginBottom: '1rem', color: '#10b981' }}>&#10003;</div>
         <h1 style={{
           fontSize: '1.5rem',
           marginBottom: '1rem',
-          color: '#065f46',
+          color: '#111827',
         }}>
           Payment Successful!
         </h1>
-        <p style={{ color: '#047857', marginBottom: '1rem' }}>
+        <p style={{ color: '#374151', marginBottom: '1rem' }}>
           Your credits have been added to your account.
         </p>
         <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>
