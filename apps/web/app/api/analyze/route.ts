@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { anthropic, MODEL, SYSTEM_PROMPT, buildUserPrompt, VerdictResponseSchema } from '@/lib/claude';
-import { getCachedVerdict, cacheVerdict } from '@/lib/cache';
-import { checkRateLimit, recordCheck } from '@/lib/rate-limit';
+import { anthropic, MODEL, SYSTEM_PROMPT, buildUserPrompt, VerdictResponseSchema, enforceVerdictRules } from '@/lib/claude';
+import { getUserVerdict, getAnonymousVerdict, saveUserVerdict, saveAnonymousVerdict } from '@/lib/cache/user-verdicts';
+import { checkRateLimit, consumeCredit, recordAnonymousCheck, hasUserPurchased } from '@/lib/rate-limit';
+import { blurResults } from '@/lib/blur';
 import type { AnalyzeRequest, AnalyzeResponse, ApiError } from '@donotstay/shared';
 import { ZodError } from 'zod';
 
@@ -33,7 +34,7 @@ function repairJson(text: string): string {
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Device-ID',
 };
 
 export async function POST(request: NextRequest) {
@@ -48,63 +49,74 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check for cached verdict
-    const cached = await getCachedVerdict(hotel.url);
-    if (cached && cached.verdict) {
-      const response: AnalyzeResponse = {
-        hotel_id: hotel.hotel_id,
-        verdict: cached.verdict,
-        confidence: cached.confidence,
-        one_liner: cached.one_liner,
-        red_flags: cached.red_flags,
-        avoid_if_you_are: cached.avoid_if_you_are,
-        bottom_line: cached.bottom_line,
-        review_count_analyzed: cached.review_count,
-        cached: true,
-      };
-      return NextResponse.json(response, { headers: corsHeaders });
-    }
-
-    // Get user from auth header
+    // Get user from auth header and device ID for anonymous users
     const authHeader = request.headers.get('Authorization');
+    const deviceId = request.headers.get('X-Device-ID');
     let userId: string | null = null;
-    let subscriptionStatus: 'free' | 'monthly' | 'annual' = 'free';
 
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.slice(7);
       const supabase = supabaseAdmin();
-      if (!supabase) {
-        return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
-      }
-      const { data: { user } } = await supabase.auth.getUser(token);
-
-      if (user) {
-        userId = user.id;
-
-        // Get subscription status
-        const { data: userData } = await supabase
-          .from('users')
-          .select('subscription_status')
-          .eq('id', user.id)
-          .single();
-
-        if (userData) {
-          subscriptionStatus = userData.subscription_status;
+      if (supabase) {
+        const { data: { user } } = await supabase.auth.getUser(token);
+        if (user) {
+          userId = user.id;
         }
       }
     }
 
-    // Check rate limit
-    const rateLimit = await checkRateLimit(userId, subscriptionStatus);
+    // Check if user has purchased (determines if results should be blurred)
+    const isPaidUser = await hasUserPurchased(userId);
+
+    // Check for user-specific cached verdict (per-user caching)
+    let userCached = null;
+    if (userId) {
+      userCached = await getUserVerdict(userId, hotel.hotel_id);
+    } else if (deviceId) {
+      userCached = await getAnonymousVerdict(deviceId, hotel.hotel_id);
+    }
+
+    // If user has their own cached verdict, return it for free (no credit consumed)
+    if (userCached && userCached.verdict) {
+      let response: AnalyzeResponse = {
+        hotel_id: hotel.hotel_id,
+        verdict: userCached.verdict,
+        confidence: userCached.confidence,
+        one_liner: userCached.one_liner,
+        red_flags: userCached.red_flags,
+        avoid_if_you_are: userCached.avoid_if_you_are,
+        bottom_line: userCached.bottom_line,
+        review_count_analyzed: userCached.review_count,
+        cached: true,
+        analyzed_at: userCached.created_at,
+      };
+
+      // Apply blurring for free users (users who haven't purchased)
+      if (!isPaidUser) {
+        response = blurResults(response);
+      }
+
+      // Get current credits for response (no consumption needed for re-views)
+      const currentRateLimit = await checkRateLimit(userId, deviceId);
+      response.credits_remaining = currentRateLimit.credits_remaining;
+      return NextResponse.json(response, { headers: corsHeaders });
+    }
+
+    // No cached verdict - need to call Claude API
+    // First check rate limit
+    const rateLimit = await checkRateLimit(userId, deviceId);
     if (!rateLimit.allowed) {
       return NextResponse.json<ApiError>(
         {
-          error: 'Rate limit exceeded',
-          code: 'RATE_LIMITED',
+          error: rateLimit.requires_signup
+            ? 'Sign up to continue checking hotels'
+            : 'No credits remaining',
+          code: rateLimit.requires_signup ? 'SIGNUP_REQUIRED' : 'NO_CREDITS',
           rate_limit: {
-            remaining: rateLimit.remaining,
-            reset_at: rateLimit.reset_at,
-            is_paid: subscriptionStatus !== 'free',
+            credits_remaining: rateLimit.credits_remaining,
+            tier: rateLimit.tier,
+            requires_signup: rateLimit.requires_signup,
+            requires_purchase: rateLimit.requires_purchase,
           },
         },
         { status: 429, headers: corsHeaders }
@@ -191,15 +203,30 @@ export async function POST(request: NextRequest) {
     }
     const verdict = validationResult.data;
 
-    // Cache the verdict
-    await cacheVerdict(hotel.url, verdict, reviews.length);
-
-    // Record the check for rate limiting
-    if (userId) {
-      await recordCheck(userId, hotel.hotel_id);
+    // Enforce hard verdict rules (override Claude if deal-breakers are present)
+    const enforcement = enforceVerdictRules(verdict);
+    if (enforcement.wasOverridden) {
+      console.log(`Verdict overridden: ${verdict.verdict} -> ${enforcement.verdict}. Reason: ${enforcement.reason}`);
+      verdict.verdict = enforcement.verdict as 'Stay' | 'Questionable' | 'Do Not Stay';
     }
 
-    const response: AnalyzeResponse = {
+    // Consume credit / record the check and save to user-specific cache
+    if (userId) {
+      const consumed = await consumeCredit(userId, hotel.hotel_id);
+      if (!consumed) {
+        // Race condition - credits depleted between check and use
+        // This is rare, but we should still return the result since we already called Claude
+        console.warn('Credits depleted during analysis - returning result anyway');
+      }
+      // Save verdict to user's cache
+      await saveUserVerdict(userId, hotel.hotel_id, hotel.url, verdict, reviews.length);
+    } else if (deviceId) {
+      await recordAnonymousCheck(deviceId, hotel.hotel_id);
+      // Save verdict to anonymous user's cache
+      await saveAnonymousVerdict(deviceId, hotel.hotel_id, hotel.url, verdict, reviews.length);
+    }
+
+    let response: AnalyzeResponse = {
       hotel_id: hotel.hotel_id,
       verdict: verdict.verdict,
       confidence: verdict.confidence,
@@ -211,13 +238,22 @@ export async function POST(request: NextRequest) {
       cached: false,
     };
 
+    // Apply blurring for free users (users who haven't purchased)
+    if (!isPaidUser) {
+      response = blurResults(response);
+    }
+
+    // Include updated credits_remaining (after consumption)
+    const finalRateLimit = await checkRateLimit(userId, deviceId);
+    response.credits_remaining = finalRateLimit.credits_remaining;
+
     return NextResponse.json(response, { headers: corsHeaders });
   } catch (error) {
     console.error('Error analyzing hotel:', error);
 
     // Provide more specific error messages for debugging
     let errorMessage = 'Failed to analyze hotel';
-    let errorCode: ApiError['code'] = 'ANALYSIS_ERROR';
+    const errorCode: ApiError['code'] = 'ANALYSIS_ERROR';
 
     if (error instanceof ZodError) {
       const fieldErrors = error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', ');

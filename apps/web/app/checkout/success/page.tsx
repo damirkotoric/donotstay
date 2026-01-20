@@ -24,10 +24,10 @@ export default function CheckoutSuccess() {
           marginBottom: '1rem',
           color: '#065f46',
         }}>
-          Welcome to Pro!
+          Payment Successful!
         </h1>
         <p style={{ color: '#047857', marginBottom: '1rem' }}>
-          Your subscription is now active. You have unlimited hotel checks.
+          Your credits have been added to your account.
         </p>
         <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>
           You can close this tab and return to the extension.

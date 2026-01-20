@@ -31,9 +31,12 @@ function copyManifestPlugin() {
   };
 }
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react(), tailwindcss(), copyManifestPlugin()],
   base: './',
+  define: {
+    __DEV__: mode === 'development',
+  },
   // Dev server config for HMR on iframe content
   server: {
     port: 5173,
@@ -71,4 +74,4 @@ export default defineConfig({
       '@': resolve(__dirname, 'src'),
     },
   },
-});
+}));

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { supabaseAdmin } from '@/lib/supabase';
+import { CREDIT_PACKS, type CreditPackType } from '@donotstay/shared';
 import Stripe from 'stripe';
 
 export async function POST(request: NextRequest) {
@@ -34,106 +35,51 @@ export async function POST(request: NextRequest) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.metadata?.user_id;
-        const plan = session.metadata?.plan as 'monthly' | 'annual';
+        const packType = session.metadata?.pack_type as CreditPackType | undefined;
 
-        if (userId && plan) {
-          // Get subscription details
-          const subscription = await stripe().subscriptions.retrieve(
-            session.subscription as string
-          );
+        // Handle credit pack purchase (one-time payment)
+        if (userId && packType && CREDIT_PACKS[packType]) {
+          const pack = CREDIT_PACKS[packType];
 
-          await supabase
-            .from('users')
-            .update({
-              subscription_status: plan,
-              subscription_ends_at: new Date(
-                subscription.current_period_end * 1000
-              ).toISOString(),
-            })
-            .eq('id', userId);
+          // Add credits using atomic function
+          const { data: newBalance, error: rpcError } = await supabase.rpc('add_credits', {
+            user_uuid: userId,
+            amount: pack.credits,
+          });
 
-          console.log(`Subscription activated for user ${userId}: ${plan}`);
-        }
-        break;
-      }
-
-      case 'customer.subscription.updated': {
-        const subscription = event.data.object as Stripe.Subscription;
-        const customerId = subscription.customer as string;
-
-        // Find user by Stripe customer ID
-        const { data: userData } = await supabase
-          .from('users')
-          .select('id')
-          .eq('stripe_customer_id', customerId)
-          .single();
-
-        if (userData) {
-          const status = subscription.status;
-          const periodEnd = new Date(subscription.current_period_end * 1000);
-
-          if (status === 'active') {
-            // Determine plan from price
-            const priceId = subscription.items.data[0]?.price.id;
-            const plan = priceId === process.env.STRIPE_PRICE_ANNUAL ? 'annual' : 'monthly';
-
-            await supabase
-              .from('users')
-              .update({
-                subscription_status: plan,
-                subscription_ends_at: periodEnd.toISOString(),
-              })
-              .eq('id', userData.id);
-          } else if (status === 'past_due' || status === 'unpaid') {
-            // Keep current plan but note the issue
-            console.log(`Subscription past due for user ${userData.id}`);
+          if (rpcError) {
+            console.error('Error adding credits:', rpcError);
+            return NextResponse.json({ error: 'Failed to add credits' }, { status: 500 });
           }
+
+          // Record purchase in credit_purchases table
+          const { error: insertError } = await supabase.from('credit_purchases').insert({
+            user_id: userId,
+            stripe_payment_intent_id: session.payment_intent as string,
+            pack_type: packType,
+            credits_amount: pack.credits,
+            amount_paid_cents: pack.priceCents,
+          });
+
+          if (insertError) {
+            console.error('Error recording purchase:', insertError);
+            // Credits were already added, so continue
+          }
+
+          console.log(`Credits added for user ${userId}: +${pack.credits} (new balance: ${newBalance})`);
         }
         break;
       }
 
-      case 'customer.subscription.deleted': {
-        const subscription = event.data.object as Stripe.Subscription;
-        const customerId = subscription.customer as string;
+      // Note: Subscription-related events are no longer needed with the credit system
+      // Keeping as comments for reference during migration
 
-        // Find user by Stripe customer ID
-        const { data: userData } = await supabase
-          .from('users')
-          .select('id')
-          .eq('stripe_customer_id', customerId)
-          .single();
-
-        if (userData) {
-          await supabase
-            .from('users')
-            .update({
-              subscription_status: 'free',
-              subscription_ends_at: null,
-            })
-            .eq('id', userData.id);
-
-          console.log(`Subscription cancelled for user ${userData.id}`);
-        }
-        break;
-      }
-
-      case 'invoice.payment_failed': {
-        const invoice = event.data.object as Stripe.Invoice;
-        const customerId = invoice.customer as string;
-
-        // Find user by Stripe customer ID
-        const { data: userData } = await supabase
-          .from('users')
-          .select('id, email')
-          .eq('stripe_customer_id', customerId)
-          .single();
-
-        if (userData) {
-          console.log(`Payment failed for user ${userData.id} (${userData.email})`);
-          // Could send an email notification here
-        }
-        break;
-      }
+      // case 'customer.subscription.updated':
+      // case 'customer.subscription.deleted':
+      // case 'invoice.payment_failed':
+      //   // These events were for subscription management
+      //   // No longer needed with credit pack purchases
+      //   break;
 
       default:
         console.log(`Unhandled event type: ${event.type}`);

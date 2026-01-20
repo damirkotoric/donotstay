@@ -1,36 +1,35 @@
 'use client';
 
-import { Check } from '@phosphor-icons/react';
+import { Check, Star } from '@phosphor-icons/react';
 import { siteConfig } from '@/lib/config';
 import { Button } from '@/components/ui/button';
 
-const plans = [
+const creditPacks = [
   {
-    name: 'Free',
-    price: '$0',
-    period: 'forever',
-    description: 'For casual trips',
-    features: [
-      `${siteConfig.pricing.free.checksPerWindow} checks per ${siteConfig.pricing.free.windowHours === 1 ? 'hour' : `${siteConfig.pricing.free.windowHours} hours`}`,
-      'Verdict + confidence score',
-      'Top red flags only',
-    ],
-    cta: 'Get Started Free',
+    key: 'entry' as const,
+    name: 'Entry Pack',
+    credits: siteConfig.pricing.creditPacks.entry.credits,
+    price: siteConfig.pricing.creditPacks.entry.priceDisplay,
+    pricePerCheck: '$1.00',
+    description: 'Try it out',
     highlighted: false,
   },
   {
-    name: 'Pro',
-    price: `$${siteConfig.pricing.pro.monthlyPrice}`,
-    period: '/month',
-    description: 'For frequent travelers & planners',
-    features: [
-      'Unlimited checks',
-      'Full red flag breakdown',
-      'All personas',
-      'Follow-up questions (coming next)',
-      `Annual: $${siteConfig.pricing.pro.annualPrice}/year (save 17%)`,
-    ],
-    cta: 'Upgrade to Pro',
+    key: 'standard' as const,
+    name: 'Standard Pack',
+    credits: siteConfig.pricing.creditPacks.standard.credits,
+    price: siteConfig.pricing.creditPacks.standard.priceDisplay,
+    pricePerCheck: '$0.67',
+    description: 'Popular',
+    highlighted: false,
+  },
+  {
+    key: 'traveler' as const,
+    name: 'Traveler Pack',
+    credits: siteConfig.pricing.creditPacks.traveler.credits,
+    price: siteConfig.pricing.creditPacks.traveler.priceDisplay,
+    pricePerCheck: '$0.40',
+    description: 'For frequent travelers',
     highlighted: true,
   },
 ];
@@ -38,79 +37,147 @@ const plans = [
 export function Pricing() {
   return (
     <section id="pricing" className="px-4 py-30 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-4xl">
-        <div className="mb-16 text-center">
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-8 text-center">
           <h2 className="text-3xl font-bold text-foreground sm:text-4xl">
-            Simple Pricing
+            Simple Credit Packs
           </h2>
           <p className="mt-4 text-xl text-muted-foreground">
-            Start free, upgrade when you need more.
+            Pay once, use anytime. Credits never expire.
           </p>
         </div>
 
-        <div className="grid items-center gap-8 md:grid-cols-2">
-          {plans.map((plan, index) => (
+        {/* Free tier callout */}
+        <div className="flex flex-col items-center space-y-2 mb-12 text-center">
+          <div className="flex items-center gap-2">
+            <Check size={20} weight="bold" />
+            <span className="font-medium">
+              Start with {siteConfig.pricing.free.anonymousChecks} free checks — no account needed
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Check size={20} weight="bold" />
+            <span className="font-medium">
+              Get {siteConfig.pricing.free.signupCredits} more checks if you create a free account
+            </span>
+          </div>
+          <p className="mt-4 text-sm text-muted-foreground">
+            Then, purchase credit packs as needed below.
+          </p>
+        </div>
+
+        <div className="grid items-stretch gap-6 md:grid-cols-3">
+          {creditPacks.map((pack) => (
             <div
-              key={index}
-              className={`rounded-2xl p-8 ${
-                plan.highlighted
-                  ? 'relative bg-gradient-to-br from-primary to-primary-dark text-white shadow-xl ring-4 ring-primary/20'
+              key={pack.key}
+              className={`relative flex flex-col rounded-2xl p-8 ${
+                pack.highlighted
+                  ? 'bg-gradient-to-br from-primary to-primary-dark text-white shadow-xl ring-4 ring-primary/20'
                   : 'border border-border bg-background'
               }`}
             >
-              {/* {plan.highlighted && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-background px-4 py-1 text-sm font-semibold text-primary shadow-md">
-                  Most Popular
+              {pack.highlighted && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex items-center gap-1 rounded-full bg-background px-4 py-1 text-sm font-semibold text-primary shadow-md">
+                  <Star size={14} weight="fill" />
+                  Best Value
                 </div>
-              )} */}
+              )}
+
               <h3
                 className={`text-xl font-semibold ${
-                  plan.highlighted ? 'text-white' : 'text-foreground'
+                  pack.highlighted ? 'text-white' : 'text-foreground'
                 }`}
               >
-                {plan.name}
+                {pack.name}
               </h3>
+
               <div className="mt-4 flex items-baseline">
-                <span className="text-4xl font-bold">{plan.price}</span>
+                <span className="text-4xl font-bold">{pack.credits}</span>
                 <span
-                  className={`ml-1 ${
-                    plan.highlighted ? 'text-white/80' : 'text-muted-foreground'
+                  className={`ml-2 ${
+                    pack.highlighted ? 'text-white/80' : 'text-muted-foreground'
                   }`}
                 >
-                  {plan.period}
+                  checks
                 </span>
               </div>
+
+              <div className="mt-2">
+                <span className={`text-2xl font-semibold ${
+                  pack.highlighted ? 'text-white' : 'text-foreground'
+                }`}>
+                  {pack.price}
+                </span>
+                <span
+                  className={`ml-2 text-sm ${
+                    pack.highlighted ? 'text-white/70' : 'text-muted-foreground'
+                  }`}
+                >
+                  ({pack.pricePerCheck}/check)
+                </span>
+              </div>
+
               <p
                 className={`mt-2 ${
-                  plan.highlighted ? 'text-white/80' : 'text-muted-foreground'
+                  pack.highlighted ? 'text-white/80' : 'text-muted-foreground'
                 }`}
               >
-                {plan.description}
+                {pack.description}
               </p>
 
-              <ul className="mt-8 space-y-4">
-                {plan.features.map((feature, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <Check
-                      size={20}
-                      weight="bold"
-                      className={`flex-shrink-0 ${
-                        plan.highlighted ? 'text-white' : 'text-primary'
-                      }`}
-                    />
-                    <span
-                      className={
-                        plan.highlighted ? 'text-white/90' : 'text-muted-foreground'
-                      }
-                    >
-                      {feature}
-                    </span>
-                  </li>
-                ))}
+              <ul className="mt-6 flex-1 space-y-3">
+                <li className="flex items-start gap-3">
+                  <Check
+                    size={20}
+                    weight="bold"
+                    className={`flex-shrink-0 ${
+                      pack.highlighted ? 'text-white' : 'text-primary'
+                    }`}
+                  />
+                  <span
+                    className={
+                      pack.highlighted ? 'text-white/90' : 'text-muted-foreground'
+                    }
+                  >
+                    Full red flag breakdown
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check
+                    size={20}
+                    weight="bold"
+                    className={`flex-shrink-0 ${
+                      pack.highlighted ? 'text-white' : 'text-primary'
+                    }`}
+                  />
+                  <span
+                    className={
+                      pack.highlighted ? 'text-white/90' : 'text-muted-foreground'
+                    }
+                  >
+                    All personas
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check
+                    size={20}
+                    weight="bold"
+                    className={`flex-shrink-0 ${
+                      pack.highlighted ? 'text-white' : 'text-primary'
+                    }`}
+                  />
+                  <span
+                    className={
+                      pack.highlighted ? 'text-white/90' : 'text-muted-foreground'
+                    }
+                  >
+                    Credits never expire
+                  </span>
+                </li>
               </ul>
 
               <Button
-                variant={plan.highlighted ? 'secondary' : 'outline'}
+                variant={pack.highlighted ? 'secondary' : 'outline'}
                 className="mt-8 w-full"
                 size="xl"
                 asChild
@@ -120,12 +187,16 @@ export function Pricing() {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  {plan.cta}
+                  Get {pack.credits} Checks
                 </a>
               </Button>
             </div>
           ))}
         </div>
+
+        <p className="mt-8 text-center text-sm text-muted-foreground">
+          All purchases are one-time payments. No subscriptions. Credits never expire.
+        </p>
       </div>
     </section>
   );

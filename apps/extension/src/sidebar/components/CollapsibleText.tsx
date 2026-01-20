@@ -5,9 +5,10 @@ import { Button } from '@donotstay/ui';
 interface CollapsibleTextProps {
   text: string;
   maxLines?: number;
+  isBlurred?: boolean;
 }
 
-function CollapsibleText({ text, maxLines = 3 }: CollapsibleTextProps) {
+function CollapsibleText({ text, maxLines = 3, isBlurred }: CollapsibleTextProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [needsCollapse, setNeedsCollapse] = useState(false);
   const textRef = useRef<HTMLParagraphElement>(null);
@@ -21,6 +22,28 @@ function CollapsibleText({ text, maxLines = 3 }: CollapsibleTextProps) {
     const maxHeight = lineHeight * maxLines;
     setNeedsCollapse(el.scrollHeight > maxHeight + 1);
   }, [text, maxLines]);
+
+  // For blurred mode, split text to show first line clearly
+  if (isBlurred) {
+    // Split by sentence or take first ~80 chars as "first line"
+    const firstSentenceEnd = text.search(/[.!?]\s/);
+    const splitIndex = firstSentenceEnd > 0 && firstSentenceEnd < 120
+      ? firstSentenceEnd + 1
+      : Math.min(80, text.indexOf(' ', 60) || 80);
+    const firstLine = text.slice(0, splitIndex);
+    const restOfText = text.slice(splitIndex);
+
+    return (
+      <div className="relative">
+        <p className="text-sm text-muted-foreground">
+          <span>{firstLine}</span>
+          {restOfText && (
+            <span className="blur-[6px] select-none">{restOfText}</span>
+          )}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="relative">

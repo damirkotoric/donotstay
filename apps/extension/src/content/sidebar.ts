@@ -1,4 +1,4 @@
-import type { AnalyzeResponse, RateLimitInfo } from '@donotstay/shared';
+import type { AnalyzeResponse, RateLimitInfo, UserTier } from '@donotstay/shared';
 import { hideBadge, showBadge } from './badge';
 
 // Use Vite env vars for dev mode (set in .env.development / .env.production)
@@ -17,6 +17,7 @@ interface VerdictUpdate {
 interface RateLimitedUpdate {
   type: 'rate_limited';
   rate_limit?: RateLimitInfo;
+  tier?: UserTier;
 }
 
 interface ErrorUpdate {
@@ -45,9 +46,17 @@ function handleEscKey(event: KeyboardEvent): void {
   }
 }
 
-// Handle ready message from sidebar iframe
+// Callback for when auth succeeds
+let authSuccessCallback: (() => void) | null = null;
+
+export function setAuthSuccessCallback(callback: () => void): void {
+  authSuccessCallback = callback;
+}
+
+// Handle messages from sidebar iframe
 function handleSidebarMessage(event: MessageEvent): void {
   if (event.data?.type === 'DONOTSTAY_SIDEBAR_READY') {
+    console.log('DoNotStay: Sidebar iframe ready');
     sidebarReady = true;
     // Send current state to sidebar
     if (sidebarIframe?.contentWindow) {
@@ -56,6 +65,23 @@ function handleSidebarMessage(event: MessageEvent): void {
         '*'
       );
     }
+  }
+
+  // Handle auth success from sidebar
+  if (event.data?.type === 'DONOTSTAY_AUTH_SUCCESS') {
+    console.log('DoNotStay: Received auth success from sidebar');
+    const { access_token } = event.data.payload;
+    // Forward to background script to store in chrome.storage
+    chrome.runtime.sendMessage({
+      type: 'STORE_AUTH_TOKEN',
+      token: access_token,
+    }).then(() => {
+      console.log('DoNotStay: Token stored, calling authSuccessCallback');
+      // Trigger callback to re-analyze or update UI
+      if (authSuccessCallback) {
+        authSuccessCallback();
+      }
+    });
   }
 }
 
@@ -131,13 +157,17 @@ export function hideSidebar(): void {
 export function updateSidebar(update: SidebarUpdate): void {
   // Always store the state so we can send it when iframe is ready
   currentSidebarState = update;
+  console.log('DoNotStay: updateSidebar called with:', update.type, 'sidebarReady:', sidebarReady);
 
   // Only send if iframe is ready
   if (sidebarReady && sidebarIframe?.contentWindow) {
+    console.log('DoNotStay: Sending DONOTSTAY_UPDATE to sidebar iframe');
     sidebarIframe.contentWindow.postMessage(
       { type: 'DONOTSTAY_UPDATE', payload: update },
       '*'
     );
+  } else {
+    console.log('DoNotStay: Sidebar not ready, message queued');
   }
 }
 

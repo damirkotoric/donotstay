@@ -1,3 +1,5 @@
+import { CREDIT_PACKS, ANONYMOUS_TIER_LIMIT, FREE_SIGNUP_CREDITS } from '@donotstay/shared';
+
 export const siteConfig = {
   name: 'DoNotStay',
   tagline: 'Know which hotels to avoid before you book',
@@ -7,14 +9,10 @@ export const siteConfig = {
   pricing: {
     free: {
       name: 'Free',
-      checksPerWindow: 2,
-      windowHours: 1,
+      anonymousChecks: ANONYMOUS_TIER_LIMIT,
+      signupCredits: FREE_SIGNUP_CREDITS,
     },
-    pro: {
-      name: 'Pro',
-      monthlyPrice: 5,
-      annualPrice: 50,
-    },
+    creditPacks: CREDIT_PACKS,
   },
   links: {
     howItWorks: '#how-it-works',

@@ -24,7 +24,7 @@ export function HowItWorks() {
   return (
     <section id="how-it-works" className="relative z-1 px-4 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl rounded-xl border bg-background p-6 shadow-sm sm:p-8">
-        <div className="flex flex-col items-center gap-2 md:flex-row md:items-start md:gap-4">
+        <div className="flex flex-col items-center gap-2 md:flex-row md:gap-4">
           {steps.map((step, index) => (
             <div key={index} className="contents">
               <div className="flex w-full gap-4 md:flex-1">

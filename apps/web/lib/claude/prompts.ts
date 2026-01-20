@@ -239,11 +239,11 @@ Read the reviews. Decide the verdict. You own this decision entirely.
 
 **FIRST: Check for automatic "Do Not Stay" triggers (these override EVERYTHING):**
 - Nightclub/bar noise until late (even 2+ mentions) = "Do Not Stay" — structural, affects everyone, won't change
-- Recurring rats, cockroaches, or bedbugs = "Do Not Stay"
+- **2+ pest mentions (rats, cockroaches, bedbugs) in the last 6 months = "Do Not Stay"** — this is non-negotiable. Multiple recent sightings mean an active, systemic problem.
 - Mold, safety hazards, confirmed scams = "Do Not Stay"
 - Multiple complaints about dirty sheets, hair in beds, bathroom grime = "Do Not Stay"
 
-If ANY of the above are present, verdict is "Do Not Stay". Full stop. Don't hedge with "Questionable". Rating doesn't matter.
+If ANY of the above are present, verdict MUST be "Do Not Stay". No exceptions. Do NOT hedge with "Questionable". Rating doesn't matter. A 9.5-rated hotel with cockroaches is still "Do Not Stay".
 
 **THEN: For hotels without deal-breakers:**
 
@@ -292,6 +292,49 @@ Match your tone to your verdict:
 - "Do Not Stay": Critical. Be direct about problems.
 
 Sound like a smart friend, not a legal document. Roast if deserved, but be fair.`;
+
+/**
+ * Enforces hard "Do Not Stay" rules that Claude might miss.
+ * This is a safety net - if certain conditions are met, we override the verdict.
+ */
+export function enforceVerdictRules(
+  verdict: { verdict: string; red_flags: Array<{ issue: string; severity: string; mention_count: number; last_reported: string }> }
+): { verdict: string; wasOverridden: boolean; reason?: string } {
+  const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+  // Check for pest issues (rats, cockroaches, bedbugs, roaches)
+  const pestKeywords = /\b(pest|rat|rats|mouse|mice|rodent|cockroach|roach|bedbug|bed\s*bug)\b/i;
+
+  const pestFlags = verdict.red_flags.filter(flag =>
+    pestKeywords.test(flag.issue) && flag.severity === 'critical'
+  );
+
+  // Count recent pest mentions (within last 6 months)
+  let recentPestMentions = 0;
+  for (const flag of pestFlags) {
+    if (flag.last_reported) {
+      const reportDate = new Date(flag.last_reported);
+      if (reportDate >= sixMonthsAgo) {
+        recentPestMentions += flag.mention_count;
+      }
+    } else {
+      // If no date, assume it's recent (conservative approach)
+      recentPestMentions += flag.mention_count;
+    }
+  }
+
+  // Rule: 2+ pest mentions in last 6 months = Do Not Stay
+  if (recentPestMentions >= 2 && verdict.verdict !== 'Do Not Stay') {
+    return {
+      verdict: 'Do Not Stay',
+      wasOverridden: true,
+      reason: `Overridden: ${recentPestMentions} pest reports in last 6 months`
+    };
+  }
+
+  return { verdict: verdict.verdict, wasOverridden: false };
+}
 
 export function buildUserPrompt(hotel: HotelInfo, reviews: ScrapedReview[]): string {
   const analysis = analyzeReviews(hotel, reviews);

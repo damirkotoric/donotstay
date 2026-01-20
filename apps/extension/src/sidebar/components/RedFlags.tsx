@@ -4,6 +4,7 @@ import { FlagBannerFold } from '@phosphor-icons/react';
 interface RedFlagsProps {
   flags: RedFlag[];
   reviewCount: number;
+  visibleCount?: number;
 }
 
 const MIN_REVIEWS_FOR_CONFIDENCE = 10;
@@ -47,11 +48,14 @@ const SEVERITY_ORDER: Record<string, number> = {
   low: 3,
 };
 
-function RedFlags({ flags, reviewCount }: RedFlagsProps) {
+function RedFlags({ flags, reviewCount, visibleCount }: RedFlagsProps) {
   // Filter out "Insufficient review data" flags - we handle this in the empty state
   const actualFlags = flags.filter(
     (f) => !f.issue.toLowerCase().includes('insufficient review')
   );
+
+  // Determine how many flags should be visible (unblurred)
+  const effectiveVisibleCount = visibleCount ?? actualFlags.length;
 
   // Sort by severity (critical first), then by recency (most recent first)
   const sortedFlags = [...actualFlags].sort((a, b) => {
@@ -117,8 +121,13 @@ function RedFlags({ flags, reviewCount }: RedFlagsProps) {
       <div className="border rounded-lg bg-border space-y-[1px] overflow-hidden">
         {sortedFlags.map((flag, index) => {
           const isCritical = flag.severity.toLowerCase() === 'critical';
+          const isBlurred = index >= effectiveVisibleCount;
+          const blurClass = isBlurred ? 'blur-[6px] select-none' : '';
           return (
-            <div key={index} className="bg-background p-4 relative overflow-hidden">
+            <div
+              key={index}
+              className="bg-background p-4 relative overflow-hidden"
+            >
               {isCritical && (
                 <FlagBannerFold
                   weight="bold"
@@ -126,18 +135,18 @@ function RedFlags({ flags, reviewCount }: RedFlagsProps) {
                 />
               )}
               <div className="flex items-start justify-between mb-1 relative z-10">
-                <span className="font-semibold text-foreground">{flag.issue}</span>
+                <span className={`font-semibold text-foreground ${blurClass}`}>{flag.issue}</span>
                 <span
                   className={`text-[11px] tracking-wider mt-0.5 px-2 py-0.5 rounded font-semibold uppercase ${getSeverityStyles(flag.severity)}`}
                 >
                   {flag.severity}
                 </span>
               </div>
-              <div className="text-xs text-muted-foreground mb-2 relative z-10">
+              <div className={`text-xs text-muted-foreground mb-2 relative z-10 ${blurClass}`}>
                 Mentioned {flag.mention_count} time{flag.mention_count !== 1 ? 's' : ''}, last {formatTimeAgo(flag.last_reported)}
               </div>
               {flag.evidence.length > 0 && (
-                <div className="text-sm text-muted-foreground italic relative z-10">
+                <div className={`text-sm text-muted-foreground italic relative z-10 ${blurClass}`}>
                   "{flag.evidence[0]}"
                 </div>
               )}

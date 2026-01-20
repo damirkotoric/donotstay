@@ -8,11 +8,13 @@ import AvoidIfPersonas from './components/AvoidIfPersonas';
 import LoadingState from './components/LoadingState';
 import ErrorState from './components/ErrorState';
 import UpgradePrompt from './components/UpgradePrompt';
+import UpgradeBanner from './components/UpgradeBanner';
+import SignupPrompt from './components/SignupPrompt';
 
 type ViewState =
   | { type: 'loading' }
   | { type: 'verdict'; verdict: AnalyzeResponse }
-  | { type: 'rate_limited'; rate_limit?: RateLimitInfo }
+  | { type: 'rate_limited'; rate_limit?: RateLimitInfo; tier?: 'anonymous' | 'authenticated' }
   | { type: 'error'; message: string };
 
 function App() {
@@ -21,7 +23,9 @@ function App() {
   useEffect(() => {
     // Listen for messages from content script
     const handleMessage = (event: MessageEvent) => {
+      console.log('DoNotStay Sidebar: Received message', event.data);
       if (event.data?.type === 'DONOTSTAY_UPDATE') {
+        console.log('DoNotStay Sidebar: Updating state to', event.data.payload.type);
         setState(event.data.payload);
       }
     };
@@ -42,7 +46,11 @@ function App() {
         {state.type === 'error' && <ErrorState message={state.message} />}
 
         {state.type === 'rate_limited' && (
-          <UpgradePrompt rateLimit={state.rate_limit} />
+          state.tier === 'anonymous' ? (
+            <SignupPrompt />
+          ) : (
+            <UpgradePrompt rateLimit={state.rate_limit} />
+          )
         )}
 
         {state.type === 'verdict' && (
@@ -54,20 +62,37 @@ function App() {
               reviewCount={state.verdict.review_count_analyzed}
             />
 
-            <CollapsibleText text={state.verdict.bottom_line} />
+            {/* Summary paragraph - shown with blur effect for free users */}
+            {state.verdict.bottom_line && (
+              <CollapsibleText
+                text={state.verdict.bottom_line}
+                isBlurred={state.verdict.is_blurred}
+              />
+            )}
+
+            {/* Show upgrade banner for blurred content */}
+            {state.verdict.is_blurred && <UpgradeBanner />}
 
             <RedFlags
               flags={state.verdict.red_flags}
               reviewCount={state.verdict.review_count_analyzed}
+              visibleCount={state.verdict.red_flags_visible_count}
             />
 
             {state.verdict.avoid_if_you_are.length > 0 && (
-              <AvoidIfPersonas personas={state.verdict.avoid_if_you_are} />
+              <AvoidIfPersonas
+                personas={state.verdict.avoid_if_you_are}
+                visibleCount={state.verdict.avoid_if_visible_count}
+              />
             )}
 
-            {state.verdict.cached && (
+            {state.verdict.analyzed_at && !state.verdict.is_blurred && (
               <div className="text-center text-xs text-muted-foreground py-2">
-                Analysis from cache
+                Analyzed on {new Date(state.verdict.analyzed_at).toLocaleDateString(undefined, {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                })}
               </div>
             )}
           </>

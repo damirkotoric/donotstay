@@ -1,12 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import '../globals.css';
 import './styles.css';
 import type { UserInfo } from '@donotstay/shared';
 
+interface AnonymousInfo {
+  deviceId: string;
+  checksUsed: number;
+  checksRemaining: number;
+}
+
 interface AuthStatus {
   authenticated: boolean;
   user: UserInfo | null;
+  anonymous?: AnonymousInfo | null;
 }
 
 function Popup() {
@@ -41,8 +48,8 @@ function Popup() {
     chrome.tabs.create({ url: 'http://localhost:3000/auth/login' });
   };
 
-  const handleUpgrade = () => {
-    chrome.tabs.create({ url: 'http://localhost:3000/upgrade' });
+  const handleBuyCredits = () => {
+    chrome.tabs.create({ url: 'http://localhost:3000/#pricing' });
   };
 
   if (authStatus === null) {
@@ -74,29 +81,34 @@ function Popup() {
         {authStatus.authenticated ? (
           <div className="user-info">
             <div className="email">{authStatus.user?.email}</div>
-            <div className="subscription">
-              {authStatus.user?.subscription_status === 'free' ? (
-                <>
-                  <span className="tier">Free tier</span>
-                  <span className="remaining">
-                    {authStatus.user.rate_limit.remaining} checks remaining
-                  </span>
-                </>
-              ) : (
-                <span className="tier pro">Pro</span>
-              )}
+            <div className="credits">
+              <span className="balance">
+                {authStatus.user?.credits_remaining ?? 0} checks remaining
+              </span>
             </div>
-            {authStatus.user?.subscription_status === 'free' && (
-              <button className="btn btn-secondary" onClick={handleUpgrade}>
-                Upgrade to Pro
+            {(authStatus.user?.credits_remaining ?? 0) === 0 && (
+              <button className="btn btn-primary" onClick={handleBuyCredits}>
+                Buy Credits
+              </button>
+            )}
+            {(authStatus.user?.credits_remaining ?? 0) > 0 && !authStatus.user?.has_purchased && (
+              <button className="btn btn-secondary" onClick={handleBuyCredits}>
+                Get More Credits
               </button>
             )}
           </div>
         ) : (
           <div className="auth-prompt">
-            <p>Sign in for more hotel checks</p>
+            {authStatus.anonymous && (
+              <div className="anonymous-status">
+                <span className="remaining">
+                  {authStatus.anonymous.checksRemaining} free {authStatus.anonymous.checksRemaining === 1 ? 'check' : 'checks'} remaining
+                </span>
+              </div>
+            )}
+            <p>Sign up free to get 5 more checks</p>
             <button className="btn btn-secondary" onClick={handleSignIn}>
-              Sign In
+              Sign Up Free
             </button>
           </div>
         )}

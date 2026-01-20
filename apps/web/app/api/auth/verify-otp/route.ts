@@ -1,0 +1,107 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabase';
+import type { ApiError, VerifyOtpRequest } from '@donotstay/shared';
+import { FREE_SIGNUP_CREDITS } from '@donotstay/shared';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
+
+export async function POST(request: NextRequest) {
+  try {
+    const body: VerifyOtpRequest = await request.json();
+    const { email, code } = body;
+
+    if (!email || !email.includes('@')) {
+      return NextResponse.json<ApiError>(
+        { error: 'Invalid email address', code: 'INVALID_EMAIL' },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    if (!code || code.length < 6) {
+      return NextResponse.json<ApiError>(
+        { error: 'Invalid verification code', code: 'INVALID_CODE' },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    const supabase = supabaseAdmin();
+    if (!supabase) {
+      return NextResponse.json<ApiError>(
+        { error: 'Database not configured', code: 'DB_NOT_CONFIGURED' },
+        { status: 503, headers: corsHeaders }
+      );
+    }
+
+    // Verify the OTP code
+    const { data, error } = await supabase.auth.verifyOtp({
+      email,
+      token: code,
+      type: 'email',
+    });
+
+    if (error || !data.session || !data.user) {
+      console.error('OTP verify error:', error);
+      return NextResponse.json<ApiError>(
+        { error: 'Invalid or expired code', code: 'INVALID_CODE' },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    const user = data.user;
+
+    // Ensure user exists in our users table with signup bonus
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id, credits_remaining')
+      .eq('id', user.id)
+      .single();
+
+    if (!existingUser) {
+      // Create new user with signup bonus credits
+      await supabase.from('users').insert({
+        id: user.id,
+        email: user.email!,
+        subscription_status: 'free',
+        credits_remaining: FREE_SIGNUP_CREDITS,
+      });
+    } else if (existingUser.credits_remaining === 0) {
+      // Grant signup bonus to existing users who never received it
+      // (e.g., users created before we added this feature)
+      await supabase
+        .from('users')
+        .update({ credits_remaining: FREE_SIGNUP_CREDITS })
+        .eq('id', user.id);
+    }
+
+    // Return session token for the extension to store
+    return NextResponse.json(
+      {
+        success: true,
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+        user: {
+          id: user.id,
+          email: user.email,
+        },
+      },
+      { headers: corsHeaders }
+    );
+  } catch (error) {
+    console.error('Error verifying OTP:', error);
+    return NextResponse.json<ApiError>(
+      { error: 'Failed to verify code', code: 'VERIFY_ERROR' },
+      { status: 500, headers: corsHeaders }
+    );
+  }
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: corsHeaders,
+  });
+}

@@ -1,7 +1,7 @@
 import { scrapeHotelInfo, scrapeGraphQLParams } from './scraper';
 import { fetchReviewsViaGraphQL } from './reviewFetcher';
 import { injectButton, updateButton, type ButtonState } from './button';
-import { injectSidebar, showSidebar, hideSidebar, updateSidebar } from './sidebar';
+import { injectSidebar, showSidebar, hideSidebar, updateSidebar, setAuthSuccessCallback } from './sidebar';
 import type { AnalyzeResponse, ApiError, HotelInfo, ScrapedReview } from '@donotstay/shared';
 
 // Inject styles dynamically
@@ -59,6 +59,7 @@ function injectStyles() {
 // State
 let isAnalyzing = false;
 let currentVerdict: AnalyzeResponse | null = null;
+let currentCreditsRemaining: number | undefined = undefined;
 
 // Prefetch state - populated on page load
 let prefetchedData: {
@@ -102,6 +103,76 @@ async function prefetchData() {
   }
 }
 
+// Check for cached verdict on page load
+async function checkCachedVerdict() {
+  try {
+    // Wait for hotel info from prefetch
+    if (prefetchPromise) {
+      await prefetchPromise;
+    }
+
+    if (!prefetchedData?.hotelInfo) return;
+
+    const { hotelInfo } = prefetchedData;
+    console.log('DoNotStay: Checking for cached verdict...');
+
+    const response = await chrome.runtime.sendMessage({
+      type: 'CHECK_CACHE',
+      hotelId: hotelInfo.hotel_id,
+    });
+
+    if (response?.cached && response?.verdict_data) {
+      console.log('DoNotStay: Found cached verdict for this hotel:', response.verdict_data.verdict);
+
+      // Store the cached verdict so clicking button opens sidebar immediately
+      const cachedVerdict: AnalyzeResponse = {
+        ...response.verdict_data,
+        hotel_id: hotelInfo.hotel_id,
+        review_count_analyzed: 0, // Not available from cache
+        analyzed_at: response.analyzed_at,
+      };
+      currentVerdict = cachedVerdict;
+
+      // Update button to show the verdict
+      const verdictState = getVerdictState(response.verdict_data.verdict);
+      updateButton({ state: verdictState });
+
+      // Pre-populate sidebar with cached data
+      updateSidebar({ type: 'verdict', verdict: cachedVerdict });
+    }
+  } catch (error) {
+    console.log('DoNotStay: Cache check error (non-blocking):', error);
+  }
+}
+
+// Fetch user's credit balance for button display
+async function fetchCreditsRemaining(): Promise<number | undefined> {
+  try {
+    const authStatus = await chrome.runtime.sendMessage({ type: 'GET_AUTH_STATUS' });
+    if (authStatus?.authenticated && authStatus?.user?.credits_remaining !== undefined) {
+      return authStatus.user.credits_remaining;
+    } else if (authStatus?.anonymous?.checksRemaining !== undefined) {
+      return authStatus.anonymous.checksRemaining;
+    }
+  } catch (error) {
+    console.log('DoNotStay: Could not fetch credits (non-blocking):', error);
+  }
+  return undefined;
+}
+
+// Handle successful authentication - trigger re-analysis
+function handleAuthSuccess() {
+  console.log('DoNotStay: handleAuthSuccess called');
+  // Clear current verdict so we re-analyze with auth
+  currentVerdict = null;
+  console.log('DoNotStay: Sending loading state to sidebar');
+  // Update sidebar to show loading state
+  updateSidebar({ type: 'loading' });
+  console.log('DoNotStay: Calling handleButtonClick');
+  // Trigger analysis
+  handleButtonClick();
+}
+
 // Initialize on page load
 async function init() {
   console.log('DoNotStay: Initializing on hotel page');
@@ -112,11 +183,28 @@ async function init() {
   // Inject sidebar (hidden by default)
   injectSidebar(handleSidebarClose);
 
-  // Inject button to trigger analysis
+  // Set up auth success callback
+  setAuthSuccessCallback(handleAuthSuccess);
+
+  // Inject button to trigger analysis (starts in loading state)
   injectButton(handleButtonClick);
 
   // Start prefetching data in background (non-blocking)
   prefetchPromise = prefetchData();
+
+  // Fetch credits and check cached verdict in parallel
+  // Button stays in loading until we know what to show
+  const [credits] = await Promise.all([
+    fetchCreditsRemaining(),
+    checkCachedVerdict(),
+  ]);
+
+  currentCreditsRemaining = credits;
+
+  // Only show idle state if we don't already have a verdict from cache
+  if (!currentVerdict) {
+    updateButton({ state: 'idle', credits_remaining: credits });
+  }
 }
 
 async function handleButtonClick() {
@@ -128,8 +216,8 @@ async function handleButtonClick() {
 
   if (isAnalyzing) return;
 
-  // Update button to loading state
-  updateButton({ state: 'loading' });
+  // Update button to analyzing state (shows spinner)
+  updateButton({ state: 'analyzing' });
 
   await analyzeHotel();
 }
@@ -173,15 +261,21 @@ async function analyzeHotel() {
     if ('error' in response) {
       const error = response as ApiError;
 
-      if (error.code === 'RATE_LIMITED') {
-        updateButton({ state: 'rate_limited' });
-        updateSidebar({ type: 'rate_limited', rate_limit: error.rate_limit });
-        // Automatically open sidebar to show rate limit info
+      if (error.code === 'RATE_LIMITED' || error.code === 'SIGNUP_REQUIRED' || error.code === 'NO_CREDITS') {
+        updateButton({ state: 'rate_limited', credits_remaining: 0 });
+        updateSidebar({
+          type: 'rate_limited',
+          rate_limit: error.rate_limit,
+          tier: error.rate_limit?.tier,
+        });
+        // Automatically open sidebar to show rate limit / signup / purchase info
         showSidebar();
       } else if (error.code === 'NO_REVIEWS') {
         updateButton({ state: 'error', message: 'No reviews found' });
+        updateSidebar({ type: 'error', message: 'No reviews found for this hotel' });
       } else {
         updateButton({ state: 'error', message: error.error });
+        updateSidebar({ type: 'error', message: error.error });
       }
       return;
     }
@@ -198,6 +292,7 @@ async function analyzeHotel() {
   } catch (error) {
     console.error('DoNotStay: Analysis error', error);
     updateButton({ state: 'error', message: 'Something went wrong' });
+    updateSidebar({ type: 'error', message: 'Something went wrong. Please try again.' });
   } finally {
     isAnalyzing = false;
   }

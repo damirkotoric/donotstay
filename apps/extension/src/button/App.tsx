@@ -2,15 +2,16 @@ import { useEffect, useState } from 'react';
 import { Button } from '@donotstay/ui';
 import { ThumbsUp, ThumbsDown, Question, Warning, Lock } from '@phosphor-icons/react';
 
-type ButtonState = 'idle' | 'loading' | 'stay' | 'depends' | 'do_not_stay' | 'error' | 'rate_limited';
+type ButtonState = 'idle' | 'loading' | 'analyzing' | 'stay' | 'depends' | 'do_not_stay' | 'error' | 'rate_limited';
 
 interface ButtonData {
   state: ButtonState;
   message?: string;
+  credits_remaining?: number;
 }
 
 function App() {
-  const [data, setData] = useState<ButtonData>({ state: 'idle' });
+  const [data, setData] = useState<ButtonData>({ state: 'loading' });
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -46,8 +47,8 @@ function App() {
 
   const getText = () => {
     switch (data.state) {
-      case 'loading':
-        return 'Analyzing...';
+      case 'analyzing':
+        return 'Checking...';
       case 'stay':
         return 'Stay';
       case 'depends':
@@ -57,9 +58,9 @@ function App() {
       case 'error':
         return data.message || 'Error';
       case 'rate_limited':
-        return 'Limit reached';
+        return 'Get credits';
       default:
-        return 'Check accommodation';
+        return 'Check';
     }
   };
 
@@ -78,12 +79,29 @@ function App() {
 
   const isIdle = data.state === 'idle';
   const isLoading = data.state === 'loading';
+  const isAnalyzing = data.state === 'analyzing';
+  const showCredits = isIdle && data.credits_remaining !== undefined && data.credits_remaining > 0;
+
+  // Show skeleton loader for initial loading state
+  if (isLoading) {
+    return (
+      <div className="pr-4 pb-4">
+        <div className="h-10 w-32 rounded-md bg-gradient-to-r from-muted via-muted-foreground/20 to-muted bg-[length:200%_100%] animate-[shimmer_1.5s_ease-in-out_infinite] shadow-lg" />
+        <style>{`
+          @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   return (
     <div className="pr-4 pb-4">
       <Button
         onClick={handleClick}
-        loading={isLoading}
+        loading={isAnalyzing}
         size="lg"
         leadingIcon={getIcon()}
         iconWeight="bold"
@@ -97,6 +115,11 @@ function App() {
           </div>
         )}
         <span>{getText()}</span>
+        {showCredits && (
+          <span className="ml-1.5 px-2 py-0.5 text-xs font-medium border rounded-full">
+            {data.credits_remaining} left
+          </span>
+        )}
       </Button>
     </div>
   );

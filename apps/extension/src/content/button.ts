@@ -6,11 +6,12 @@ function getIframeUrl(path: string): string {
   return DEV_MODE ? `${DEV_SERVER_URL}/${path}` : chrome.runtime.getURL(path);
 }
 
-export type ButtonState = 'idle' | 'loading' | 'stay' | 'depends' | 'do_not_stay' | 'error' | 'rate_limited';
+export type ButtonState = 'idle' | 'loading' | 'analyzing' | 'stay' | 'depends' | 'do_not_stay' | 'error' | 'rate_limited';
 
 export interface ButtonPayload {
   state: ButtonState;
   message?: string;
+  credits_remaining?: number;
 }
 
 let buttonContainer: HTMLElement | null = null;

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { checkRateLimit } from '@/lib/rate-limit';
+import { hasUserPurchased } from '@/lib/rate-limit';
+import { FREE_SIGNUP_CREDITS } from '@donotstay/shared';
 import type { UserInfo, ApiError } from '@donotstay/shared';
 
 const corsHeaders = {
@@ -41,20 +42,20 @@ export async function GET(request: NextRequest) {
     // Get user data from our users table
     const { data: userData, error: userError } = await supabase
       .from('users')
-      .select('*')
+      .select('id, email, credits_remaining')
       .eq('id', user.id)
       .single();
 
     if (userError || !userData) {
-      // User authenticated but not in our table yet - create entry
+      // User authenticated but not in our table yet - create entry with default credits
       const { data: newUser, error: createError } = await supabase
         .from('users')
         .insert({
           id: user.id,
           email: user.email!,
-          subscription_status: 'free',
+          credits_remaining: FREE_SIGNUP_CREDITS,
         })
-        .select()
+        .select('id, email, credits_remaining')
         .single();
 
       if (createError || !newUser) {
@@ -64,36 +65,24 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      const rateLimit = await checkRateLimit(user.id, 'free');
-
       const response: UserInfo = {
         id: newUser.id,
         email: newUser.email,
-        subscription_status: 'free',
-        subscription_ends_at: null,
-        rate_limit: {
-          remaining: rateLimit.remaining,
-          reset_at: rateLimit.reset_at,
-          is_paid: false,
-        },
+        credits_remaining: newUser.credits_remaining,
+        has_purchased: false,
       };
 
       return NextResponse.json(response, { headers: corsHeaders });
     }
 
-    // Get rate limit info
-    const rateLimit = await checkRateLimit(user.id, userData.subscription_status);
+    // Check if user has ever purchased credits
+    const hasPurchased = await hasUserPurchased(user.id);
 
     const response: UserInfo = {
       id: userData.id,
       email: userData.email,
-      subscription_status: userData.subscription_status,
-      subscription_ends_at: userData.subscription_ends_at,
-      rate_limit: {
-        remaining: rateLimit.remaining,
-        reset_at: rateLimit.reset_at,
-        is_paid: userData.subscription_status !== 'free',
-      },
+      credits_remaining: userData.credits_remaining,
+      has_purchased: hasPurchased,
     };
 
     return NextResponse.json(response, { headers: corsHeaders });

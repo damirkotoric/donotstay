@@ -34,8 +34,7 @@ export function Hero() {
               </Button>
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              Free tier: {siteConfig.pricing.free.checksPerWindow} checks every{' '}
-              {siteConfig.pricing.free.windowHours === 1 ? 'hour' : `${siteConfig.pricing.free.windowHours} hours`}
+              {siteConfig.pricing.free.anonymousChecks} free checks to start, {siteConfig.pricing.free.signupCredits} more when you sign up
             </p>
             <div className="mt-8">
               <p className="mb-2 text-xs text-muted-foreground uppercase font-semibold">Works with</p>
