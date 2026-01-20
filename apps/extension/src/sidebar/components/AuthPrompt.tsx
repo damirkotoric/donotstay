@@ -1,4 +1,5 @@
-import React from 'react';
+import { User } from '@phosphor-icons/react';
+import { Button } from '@donotstay/ui';
 
 function AuthPrompt() {
   const handleSignIn = () => {
@@ -6,15 +7,17 @@ function AuthPrompt() {
   };
 
   return (
-    <div className="upgrade-prompt">
-      <div className="upgrade-icon">&#128100;</div>
-      <div className="upgrade-title">Sign In Required</div>
-      <div className="upgrade-message">
+    <div className="flex flex-col items-center justify-center py-10 px-5 text-center">
+      <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
+        <User size={28} weight="bold" className="text-muted-foreground" />
+      </div>
+      <div className="text-lg font-bold text-foreground mb-2">Sign In Required</div>
+      <div className="text-sm text-muted-foreground mb-6">
         Sign in to analyze hotels and track your checks.
       </div>
-      <button className="upgrade-btn" onClick={handleSignIn}>
+      <Button onClick={handleSignIn}>
         Sign In with Email
-      </button>
+      </Button>
     </div>
   );
 }

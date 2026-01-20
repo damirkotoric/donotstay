@@ -1,4 +1,5 @@
 import { Lock } from '@phosphor-icons/react';
+import { Button } from '@donotstay/ui';
 
 interface BlurOverlayProps {
   hiddenCount: number;
@@ -27,12 +28,9 @@ function BlurOverlay({ hiddenCount, itemType }: BlurOverlayProps) {
         <p className="text-sm text-muted-foreground mb-2">
           +{hiddenCount} more {itemType} hidden
         </p>
-        <button
-          onClick={handleUpgrade}
-          className="text-xs text-violet-600 hover:text-violet-700 underline font-medium"
-        >
+        <Button variant="link" size="sm" onClick={handleUpgrade}>
           Upgrade to see all
-        </button>
+        </Button>
       </div>
     </div>
   );

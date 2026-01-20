@@ -28,7 +28,7 @@ const buttonVariants = cva(
         donotstay: "bg-verdict-donotstay text-white relative after:absolute after:inset-0 after:rounded-[inherit] after:pointer-events-none hover:after:bg-black/10 after:transition-colors [&>*]:relative [&>*]:z-10",
       },
       size: {
-        default: "h-9 px-4 py-2 gap-1.5",
+        default: "h-9 px-4 py-2 gap-1.5 text-base",
         sm: "h-8 text-sm rounded-md gap-1.5 px-3",
         lg: "h-10 rounded-md px-4 gap-2 text-base",
         xl: "h-12 rounded-lg px-8 text-lg gap-2.5",

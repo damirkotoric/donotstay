@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { List, X } from '@phosphor-icons/react';
 import { siteConfig } from '@/lib/config';
-import { LogoFull } from '@/components/Logo';
+import { LogoFull, LogoFullDark } from '@/components/Logo';
 import { Button } from '@/components/ui/button';
 
 export function Navbar() {
@@ -62,7 +62,8 @@ export function Navbar() {
           <div className="flex h-14 items-center justify-between">
             {/* Logo */}
             <a href="/" className="flex items-center">
-              <LogoFull height={28} />
+              <LogoFull height={28} className="block dark:hidden" />
+              <LogoFullDark height={28} className="hidden dark:block" />
             </a>
 
             {/* Desktop Nav */}
@@ -92,13 +93,15 @@ export function Navbar() {
             </div>
 
             {/* Mobile menu button */}
-            <button
-              className="p-2 md:hidden"
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
               onClick={() => setIsDrawerOpen(true)}
               aria-label="Open menu"
             >
               <List size={24} weight="bold" className="text-muted-foreground" />
-            </button>
+            </Button>
           </div>
         </div>
       </nav>
@@ -119,15 +122,17 @@ export function Navbar() {
       >
         <div className="flex h-16 items-center justify-between px-4">
           <div className="flex items-center">
-            <LogoFull height={28} />
+            <LogoFull height={28} className="block dark:hidden" />
+            <LogoFullDark height={28} className="hidden dark:block" />
           </div>
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => setIsDrawerOpen(false)}
-            className="p-2"
             aria-label="Close menu"
           >
             <X size={24} weight="bold" className="text-muted-foreground" />
-          </button>
+          </Button>
         </div>
         <div className="flex flex-col gap-4 px-4 py-6">
           <a

@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Check, Lock } from '@phosphor-icons/react';
+import { Button } from '@donotstay/ui';
 import { CREDIT_PACKS } from '@donotstay/shared';
 import type { RateLimitInfo, CreditPackType } from '@donotstay/shared';
 
@@ -142,32 +144,36 @@ function UpgradePrompt({ rateLimit: _rateLimit, onCreditsUpdated }: UpgradePromp
   if (checkoutState === 'success') {
     return (
       <div className="flex flex-col items-center justify-center py-10 px-5 text-center">
-        <div className="text-5xl mb-4">&#10003;</div>
+        <div className="w-12 h-12 rounded-full bg-verdict-stay flex items-center justify-center mb-4">
+          <Check size={28} weight="bold" className="text-primary-foreground" />
+        </div>
         <div className="text-xl font-bold text-foreground mb-2">Payment Successful!</div>
         <div className="text-sm text-muted-foreground mb-2">
           Your credits have been added to your account.
         </div>
         {newCreditBalance !== null && (
-          <div className="text-2xl font-bold text-violet-500 mb-6">
+          <div className="text-2xl font-bold text-primary mb-6">
             {newCreditBalance} checks available
           </div>
         )}
-        <button
-          className="bg-gradient-to-br from-violet-500 to-violet-600 text-white border-none py-3.5 px-7 rounded-xl text-[15px] font-semibold cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-violet-500/30"
+        <Button
+          size="lg"
           onClick={() => {
             // Close sidebar and start the check
             window.parent.postMessage({ type: 'DONOTSTAY_START_CHECK' }, '*');
           }}
         >
           Start Check
-        </button>
+        </Button>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col items-center justify-center py-10 px-5 text-center">
-      <div className="text-5xl mb-4">&#128274;</div>
+      <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
+        <Lock size={28} weight="bold" className="text-muted-foreground" />
+      </div>
       <div className="text-xl font-bold text-foreground mb-2">Out of Credits</div>
       <div className="text-sm text-muted-foreground mb-6">
         Get more credits to continue analyzing hotels.
@@ -204,7 +210,7 @@ function UpgradePrompt({ rateLimit: _rateLimit, onCreditsUpdated }: UpgradePromp
       </div>
 
       {error && (
-        <div className="text-sm text-red-500 mb-4">
+        <div className="text-sm text-destructive mb-4">
           {error}
         </div>
       )}
@@ -215,23 +221,26 @@ function UpgradePrompt({ rateLimit: _rateLimit, onCreditsUpdated }: UpgradePromp
         </div>
       )}
 
-      <button
-        className="bg-gradient-to-br from-violet-500 to-violet-600 text-white border-none py-3.5 px-7 rounded-xl text-[15px] font-semibold cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-violet-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none"
+      <Button
+        size="lg"
         onClick={handleBuyCredits}
         disabled={checkoutState === 'loading' || checkoutState === 'polling'}
+        loading={checkoutState === 'loading'}
       >
         {checkoutState === 'loading' ? 'Loading...' : checkoutState === 'polling' ? 'Waiting for payment...' : 'Buy Credits'}
-      </button>
+      </Button>
 
       {/* Paid already? Check again link */}
       {hasAttemptedCheckout && checkoutState === 'idle' && (
-        <button
+        <Button
+          variant="link"
+          size="sm"
           onClick={handleManualCheck}
           disabled={isCheckingCredits}
-          className="text-sm text-violet-500 hover:text-violet-600 underline mt-2 mb-2 disabled:opacity-50"
+          className="mt-2 mb-2"
         >
           {isCheckingCredits ? 'Checking...' : 'Paid already? Check again'}
-        </button>
+        </Button>
       )}
 
       {/* Powered by Stripe badge */}
@@ -261,16 +270,16 @@ function CreditPackOption({ credits, price, isPopular, selected, onSelect, disab
       disabled={disabled}
       className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
         selected
-          ? 'border-violet-500 bg-violet-500/10 ring-2 ring-violet-500/50'
+          ? 'border-primary bg-primary/10 ring-2 ring-ring/50'
           : isPopular
-          ? 'border-violet-500/50 bg-violet-500/5 hover:bg-violet-500/10'
+          ? 'border-primary/50 bg-primary/5 hover:bg-primary/10'
           : 'border-border bg-background hover:bg-muted/50'
       }`}
     >
       <span className="text-sm font-medium text-foreground">
         {credits} checks
         {isPopular && (
-          <span className="ml-2 text-xs text-violet-500 font-semibold">Popular</span>
+          <span className="ml-2 text-xs text-primary font-semibold">Popular</span>
         )}
       </span>
       <span className="text-sm font-bold text-foreground">{price}</span>

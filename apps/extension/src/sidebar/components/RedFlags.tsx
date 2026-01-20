@@ -1,5 +1,5 @@
 import type { RedFlag } from '@donotstay/shared';
-import { FlagBannerFold } from '@phosphor-icons/react';
+import { Check, FlagBannerFold } from '@phosphor-icons/react';
 
 interface RedFlagsProps {
   flags: RedFlag[];
@@ -29,15 +29,15 @@ function formatTimeAgo(dateString: string): string {
 function getSeverityStyles(severity: string) {
   switch (severity.toLowerCase()) {
     case 'critical':
-      return 'bg-red-600 text-white';
+      return 'bg-destructive text-white';
     case 'high':
-      return 'bg-orange-500 text-white';
+      return 'bg-verdict-donotstay text-white';
     case 'medium':
-      return 'bg-amber-400 text-gray-900';
+      return 'bg-verdict-depends text-foreground';
     case 'low':
-      return 'bg-gray-200 text-gray-600';
+      return 'bg-muted text-muted-foreground';
     default:
-      return 'bg-gray-200 text-gray-600';
+      return 'bg-muted text-muted-foreground';
   }
 }
 
@@ -75,12 +75,12 @@ function RedFlags({ flags, reviewCount, visibleCount }: RedFlagsProps) {
   // Empty state: too few reviews
   if (!hasFlags && !hasEnoughReviews) {
     return (
-      <section className="bg-amber-50 dark:bg-amber-950/30 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-200 mb-3 flex items-center gap-2">
+      <section className="bg-verdict-depends-light rounded-xl p-4">
+        <h3 className="text-sm font-semibold text-verdict-depends mb-3 flex items-center gap-2">
           Red Flags
         </h3>
         <div className="text-center py-6 px-4">
-          <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 flex items-center justify-center text-2xl font-bold mx-auto mb-3">
+          <div className="w-12 h-12 rounded-full bg-verdict-depends/20 text-verdict-depends flex items-center justify-center text-2xl font-bold mx-auto mb-3">
             ?
           </div>
           <div className="text-[15px] font-semibold text-foreground mb-1">Not enough data</div>
@@ -96,13 +96,13 @@ function RedFlags({ flags, reviewCount, visibleCount }: RedFlagsProps) {
   // Empty state: many reviews but no issues found
   if (!hasFlags && hasEnoughReviews) {
     return (
-      <section className="bg-emerald-50 dark:bg-emerald-950/30 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-emerald-800 dark:text-emerald-200 mb-3 flex items-center gap-2">
+      <section className="bg-verdict-stay-light rounded-xl p-4">
+        <h3 className="text-sm font-semibold text-verdict-stay mb-3 flex items-center gap-2">
           Red Flags
         </h3>
         <div className="text-center py-6 px-4">
-          <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl font-bold mx-auto mb-3">
-            &#10003;
+          <div className="w-12 h-12 rounded-full bg-verdict-stay/20 text-verdict-stay flex items-center justify-center mx-auto mb-3">
+            <Check size={28} weight="bold" />
           </div>
           <div className="text-[15px] font-semibold text-foreground mb-1">No issues found</div>
           <div className="text-[13px] text-muted-foreground">
@@ -115,7 +115,7 @@ function RedFlags({ flags, reviewCount, visibleCount }: RedFlagsProps) {
 
   return (
     <section className="">
-      <h3 className="text-sm font-semibold text-red-800 dark:text-red-200 mb-3 flex items-center gap-1">
+      <h3 className="text-sm font-semibold text-destructive mb-3 flex items-center gap-1">
         <span className="text-lg">🚩</span> Red Flags
       </h3>
       <div className="border rounded-lg bg-border space-y-[1px] overflow-hidden">
@@ -131,7 +131,7 @@ function RedFlags({ flags, reviewCount, visibleCount }: RedFlagsProps) {
               {isCritical && (
                 <FlagBannerFold
                   weight="bold"
-                  className="absolute -bottom-4 -right-4 w-24 h-24 text-red-500/10 pointer-events-none"
+                  className="absolute -bottom-4 -right-4 w-24 h-24 text-destructive/10 pointer-events-none"
                 />
               )}
               <div className="flex items-start justify-between mb-1 relative z-10">

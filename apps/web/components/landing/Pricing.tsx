@@ -49,14 +49,14 @@ export function Pricing() {
 
         {/* Free tier callout */}
         <div className="flex flex-col items-center space-y-2 mb-12 text-center">
-          <div className="flex items-center gap-2">
-            <Check size={20} weight="bold" />
+          <div className="flex items-start gap-2">
+            <Check size={20} weight="bold" className="mt-0.5" />
             <span className="font-medium">
               Start with {siteConfig.pricing.free.anonymousChecks} free checks — no account needed
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <Check size={20} weight="bold" />
+          <div className="flex items-start gap-2">
+            <Check size={20} weight="bold" className="mt-0.5" />
             <span className="font-medium">
               Get {siteConfig.pricing.free.signupCredits} more checks if you create a free account
             </span>
@@ -182,11 +182,7 @@ export function Pricing() {
                 size="xl"
                 asChild
               >
-                <a
-                  href={siteConfig.chromeWebStoreUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
+                <a href={`/checkout?pack=${pack.key}`}>
                   Get {pack.credits} Checks
                 </a>
               </Button>

@@ -5,9 +5,9 @@ interface ConfidenceScoreProps {
 
 function ConfidenceScore({ score, reviewCount }: ConfidenceScoreProps) {
   const getCircleStyles = () => {
-    if (score >= 80) return 'bg-gradient-to-br from-emerald-500 to-emerald-600';
-    if (score >= 60) return 'bg-gradient-to-br from-amber-500 to-amber-600';
-    return 'bg-gradient-to-br from-gray-500 to-gray-600';
+    if (score >= 80) return 'bg-verdict-stay';
+    if (score >= 60) return 'bg-verdict-depends';
+    return 'bg-muted-foreground';
   };
 
   const getLabel = () => {

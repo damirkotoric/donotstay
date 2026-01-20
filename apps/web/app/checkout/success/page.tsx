@@ -1,11 +1,12 @@
 import { Check } from '@phosphor-icons/react/dist/ssr';
-import { LogoFull } from '@/components/Logo';
+import { LogoFull, LogoFullDark } from '@/components/Logo';
 
 export default function CheckoutSuccess() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center bg-muted gap-6">
       <div className="mb-6 flex justify-center">
-        <LogoFull height={32} />
+        <LogoFull height={32} className="block dark:hidden" />
+        <LogoFullDark height={32} className="hidden dark:block" />
       </div>
       <div className="max-w-md p-8 rounded-xl bg-card shadow-md">
         <div className="mx-auto mb-4 w-12 h-12 rounded-full bg-verdict-stay flex items-center justify-center">

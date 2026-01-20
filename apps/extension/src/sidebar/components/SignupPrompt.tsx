@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Envelope, PaperPlaneTilt, CheckCircle, SpinnerGap, ArrowLeft, WarningCircle } from '@phosphor-icons/react';
+import { Button, Input } from '@donotstay/ui';
 
 // Use localhost for dev, production URL for prod builds
 declare const __DEV__: boolean;
@@ -220,17 +221,14 @@ function SignupPrompt({ onNeedsUpgrade }: SignupPromptProps) {
     if (!isNewUser && creditsRemaining === 0) {
       return (
         <div className="flex flex-col items-center justify-center py-10 px-5 text-center">
-          <WarningCircle weight="fill" className="w-12 h-12 text-amber-500 mb-4" />
+          <WarningCircle weight="fill" className="w-12 h-12 text-verdict-depends mb-4" />
           <div className="text-lg font-bold text-foreground mb-2">Welcome back!</div>
           <div className="text-sm text-muted-foreground mb-6">
             You've used all your free checks.
           </div>
-          <button
-            onClick={() => onNeedsUpgrade?.()}
-            className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium px-6 py-3 rounded-lg transition-colors"
-          >
+          <Button onClick={() => onNeedsUpgrade?.()}>
             Get More Checks
-          </button>
+          </Button>
         </div>
       );
     }
@@ -239,12 +237,12 @@ function SignupPrompt({ onNeedsUpgrade }: SignupPromptProps) {
     if (!isNewUser && creditsRemaining > 0) {
       return (
         <div className="flex flex-col items-center justify-center py-10 px-5 text-center">
-          <CheckCircle weight="fill" className="w-12 h-12 text-emerald-500 mb-4" />
+          <CheckCircle weight="fill" className="w-12 h-12 text-verdict-stay mb-4" />
           <div className="text-lg font-bold text-foreground mb-2">Welcome back!</div>
           <div className="text-sm text-muted-foreground mb-6">
             You have {creditsRemaining} {creditsRemaining === 1 ? 'check' : 'checks'} remaining.
           </div>
-          <SpinnerGap className="w-6 h-6 text-violet-500 animate-spin" />
+          <SpinnerGap className="w-6 h-6 text-primary animate-spin" />
           <div className="text-xs text-muted-foreground mt-2">Analyzing hotel...</div>
         </div>
       );
@@ -253,12 +251,12 @@ function SignupPrompt({ onNeedsUpgrade }: SignupPromptProps) {
     // New user - default case
     return (
       <div className="flex flex-col items-center justify-center py-10 px-5 text-center">
-        <CheckCircle weight="fill" className="w-12 h-12 text-emerald-500 mb-4" />
+        <CheckCircle weight="fill" className="w-12 h-12 text-verdict-stay mb-4" />
         <div className="text-lg font-bold text-foreground mb-2">Welcome!</div>
         <div className="text-sm text-muted-foreground mb-6">
           5 free checks have been added to your account.
         </div>
-        <SpinnerGap className="w-6 h-6 text-violet-500 animate-spin" />
+        <SpinnerGap className="w-6 h-6 text-primary animate-spin" />
         <div className="text-xs text-muted-foreground mt-2">Analyzing hotel...</div>
       </div>
     );
@@ -268,19 +266,22 @@ function SignupPrompt({ onNeedsUpgrade }: SignupPromptProps) {
   if (step === 'code') {
     return (
       <div className="flex flex-col items-center justify-center py-10 px-5 text-center">
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
+          leadingIcon={ArrowLeft}
+          iconWeight="bold"
           onClick={() => {
             setStep('email');
             setCode(['', '', '', '', '', '']);
             setErrorMessage('');
           }}
-          className="self-start mb-4 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="self-start mb-4"
         >
-          <ArrowLeft weight="bold" className="w-4 h-4" />
           Back
-        </button>
+        </Button>
 
-        <Envelope weight="bold" className="w-12 h-12 text-violet-500 mb-4" />
+        <Envelope weight="bold" className="w-12 h-12 text-primary mb-4" />
         <div className="text-lg font-bold text-foreground mb-2">Enter your code</div>
         <div className="text-sm text-muted-foreground mb-6">
           We sent a 6-digit code to
@@ -290,7 +291,7 @@ function SignupPrompt({ onNeedsUpgrade }: SignupPromptProps) {
 
         <div className="flex gap-2 mb-4" onPaste={handlePaste}>
           {code.map((digit, index) => (
-            <input
+            <Input
               key={index}
               ref={(el) => { inputRefs.current[index] = el; }}
               type="text"
@@ -300,26 +301,27 @@ function SignupPrompt({ onNeedsUpgrade }: SignupPromptProps) {
               onChange={(e) => handleCodeChange(index, e.target.value)}
               onKeyDown={(e) => handleKeyDown(index, e)}
               disabled={status === 'loading'}
-              className="w-10 h-12 text-center text-lg font-bold border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent disabled:opacity-50"
+              className="w-10 h-12 text-center text-lg font-bold"
             />
           ))}
         </div>
 
         {status === 'error' && (
-          <p className="text-xs text-red-500 mb-4">{errorMessage}</p>
+          <p className="text-xs text-destructive mb-4">{errorMessage}</p>
         )}
 
         {status === 'loading' && (
-          <SpinnerGap className="w-6 h-6 text-violet-500 animate-spin mb-4" />
+          <SpinnerGap className="w-6 h-6 text-primary animate-spin mb-4" />
         )}
 
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={handleResend}
           disabled={!canResend || status === 'loading'}
-          className="text-sm text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {canResend ? 'Resend code' : `Resend code in ${resendCountdown}s`}
-        </button>
+        </Button>
       </div>
     );
   }
@@ -327,42 +329,39 @@ function SignupPrompt({ onNeedsUpgrade }: SignupPromptProps) {
   // Email input screen
   return (
     <div className="flex flex-col items-center justify-center py-10 px-5 text-center">
-      <Envelope weight="bold" className="w-12 h-12 text-violet-500 mb-4" />
+      <Envelope weight="bold" className="w-12 h-12 text-foreground mb-4" />
       <div className="text-lg font-bold text-foreground mb-2">Continue with email</div>
-      <div className="text-sm text-muted-foreground mb-6">
+      <div className="text-base text-muted-foreground mb-6">
         New users get 5 free checks.
         <br />
         No password needed — we'll email you a code.
       </div>
 
       <form onSubmit={handleEmailSubmit} className="w-full max-w-xs space-y-3">
-        <input
+        <Input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
-          className="w-full px-4 py-3 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+          className="h-11"
           disabled={status === 'loading'}
         />
 
         {status === 'error' && (
-          <p className="text-xs text-red-500">{errorMessage}</p>
+          <p className="text-xs text-destructive">{errorMessage}</p>
         )}
 
-        <button
+        <Button
           type="submit"
           disabled={status === 'loading'}
-          className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-700 disabled:bg-violet-400 text-white text-sm font-medium px-4 py-3 rounded-lg transition-colors"
+          loading={status === 'loading'}
+          leadingIcon={PaperPlaneTilt}
+          iconWeight="bold"
+          className="w-full"
+          size="lg"
         >
-          {status === 'loading' ? (
-            <SpinnerGap className="w-5 h-5 animate-spin" />
-          ) : (
-            <>
-              <PaperPlaneTilt weight="bold" className="w-5 h-5" />
-              Send Code
-            </>
-          )}
-        </button>
+          Send Code
+        </Button>
       </form>
     </div>
   );
