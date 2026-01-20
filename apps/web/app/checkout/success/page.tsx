@@ -1,5 +1,7 @@
 'use client';
 
+import { LogoFull } from '@/components/Logo';
+
 export default function CheckoutSuccess() {
   return (
     <div style={{
@@ -20,11 +22,9 @@ export default function CheckoutSuccess() {
         background: '#ffffff',
         boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
       }}>
-        <img
-          src="/logo-donotstay.png"
-          alt="DoNotStay"
-          style={{ height: '32px', marginBottom: '1.5rem' }}
-        />
+        <div style={{ marginBottom: '1.5rem' }}>
+          <LogoFull height={32} />
+        </div>
         <div style={{ fontSize: '3rem', marginBottom: '1rem', color: '#10b981' }}>&#10003;</div>
         <h1 style={{
           fontSize: '1.5rem',
