@@ -1,7 +1,7 @@
 import { scrapeHotelInfo, scrapeGraphQLParams } from './scraper';
 import { fetchReviewsViaGraphQL } from './reviewFetcher';
 import { injectButton, updateButton, type ButtonState } from './button';
-import { injectSidebar, showSidebar, hideSidebar, updateSidebar, setAuthSuccessCallback } from './sidebar';
+import { injectSidebar, showSidebar, hideSidebar, updateSidebar, setAuthSuccessCallback, setCreditsUpdatedCallback } from './sidebar';
 import type { AnalyzeResponse, ApiError, HotelInfo, ScrapedReview } from '@donotstay/shared';
 
 // Inject styles dynamically
@@ -32,12 +32,14 @@ function injectStyles() {
       transform: translateX(100%);
       transition: transform 0.3s ease-out;
     }
-    #donotstay-sidebar-container.visible { transform: translateX(0); }
+    #donotstay-sidebar-container.visible {
+      transform: translateX(0);
+      box-shadow: -4px 0 24px rgba(0, 0, 0, 0.1);
+    }
     #donotstay-sidebar-iframe {
       width: 100%;
       height: 100%;
       border: none;
-      box-shadow: -4px 0 24px rgba(0, 0, 0, 0.1);
     }
     #donotstay-backdrop {
       position: fixed;
@@ -185,6 +187,9 @@ async function init() {
 
   // Set up auth success callback
   setAuthSuccessCallback(handleAuthSuccess);
+
+  // Set up credits updated callback (reuses same logic as auth success)
+  setCreditsUpdatedCallback(handleAuthSuccess);
 
   // Inject button to trigger analysis (starts in loading state)
   injectButton(handleButtonClick);

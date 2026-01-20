@@ -136,6 +136,9 @@ importers:
       '@types/react-dom':
         specifier: ^18.3.5
         version: 18.3.7(@types/react@18.3.27)
+      concurrently:
+        specifier: ^9.2.1
+        version: 9.2.1
       tw-animate-css:
         specifier: ^1.4.0
         version: 1.4.0

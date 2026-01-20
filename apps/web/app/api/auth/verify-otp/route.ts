@@ -53,14 +53,17 @@ export async function POST(request: NextRequest) {
 
     const user = data.user;
 
-    // Ensure user exists in our users table with signup bonus
+    // Check if user exists in our users table
     const { data: existingUser } = await supabase
       .from('users')
       .select('id, credits_remaining')
       .eq('id', user.id)
       .single();
 
-    if (!existingUser) {
+    const isNewUser = !existingUser;
+    let creditsRemaining = existingUser?.credits_remaining ?? FREE_SIGNUP_CREDITS;
+
+    if (isNewUser) {
       // Create new user with signup bonus credits
       await supabase.from('users').insert({
         id: user.id,
@@ -68,14 +71,9 @@ export async function POST(request: NextRequest) {
         subscription_status: 'free',
         credits_remaining: FREE_SIGNUP_CREDITS,
       });
-    } else if (existingUser.credits_remaining === 0) {
-      // Grant signup bonus to existing users who never received it
-      // (e.g., users created before we added this feature)
-      await supabase
-        .from('users')
-        .update({ credits_remaining: FREE_SIGNUP_CREDITS })
-        .eq('id', user.id);
+      creditsRemaining = FREE_SIGNUP_CREDITS;
     }
+    // Note: Returning users keep their existing credits - no bonus for signing in again
 
     // Return session token for the extension to store
     return NextResponse.json(
@@ -87,6 +85,8 @@ export async function POST(request: NextRequest) {
           id: user.id,
           email: user.email,
         },
+        is_new_user: isNewUser,
+        credits_remaining: creditsRemaining,
       },
       { headers: corsHeaders }
     );

@@ -53,6 +53,13 @@ export function setAuthSuccessCallback(callback: () => void): void {
   authSuccessCallback = callback;
 }
 
+// Callback for when credits are updated (after purchase)
+let creditsUpdatedCallback: (() => void) | null = null;
+
+export function setCreditsUpdatedCallback(callback: () => void): void {
+  creditsUpdatedCallback = callback;
+}
+
 // Handle messages from sidebar iframe
 function handleSidebarMessage(event: MessageEvent): void {
   if (event.data?.type === 'DONOTSTAY_SIDEBAR_READY') {
@@ -82,6 +89,14 @@ function handleSidebarMessage(event: MessageEvent): void {
         authSuccessCallback();
       }
     });
+  }
+
+  // Handle credits updated from sidebar (after purchase)
+  if (event.data?.type === 'DONOTSTAY_CREDITS_UPDATED') {
+    console.log('DoNotStay: Credits updated, triggering re-analysis');
+    if (creditsUpdatedCallback) {
+      creditsUpdatedCallback();
+    }
   }
 }
 

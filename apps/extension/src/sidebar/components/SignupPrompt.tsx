@@ -1,11 +1,22 @@
 import { useState, useRef, useEffect } from 'react';
-import { Envelope, PaperPlaneTilt, CheckCircle, SpinnerGap, ArrowLeft } from '@phosphor-icons/react';
+import { Envelope, PaperPlaneTilt, CheckCircle, SpinnerGap, ArrowLeft, WarningCircle } from '@phosphor-icons/react';
 
-const API_URL = 'http://localhost:3000/api';
+// Use localhost for dev, production URL for prod builds
+declare const __DEV__: boolean;
+const API_URL = __DEV__ ? 'http://localhost:3000/api' : 'https://donotstay.app/api';
 
 type Step = 'email' | 'code' | 'success';
 
-function SignupPrompt() {
+interface AuthResult {
+  is_new_user: boolean;
+  credits_remaining: number;
+}
+
+interface SignupPromptProps {
+  onNeedsUpgrade?: () => void;
+}
+
+function SignupPrompt({ onNeedsUpgrade }: SignupPromptProps) {
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState(['', '', '', '', '', '']);
@@ -13,6 +24,7 @@ function SignupPrompt() {
   const [errorMessage, setErrorMessage] = useState('');
   const [canResend, setCanResend] = useState(false);
   const [resendCountdown, setResendCountdown] = useState(30);
+  const [authResult, setAuthResult] = useState<AuthResult | null>(null);
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -128,6 +140,12 @@ function SignupPrompt() {
         throw new Error(data.error || 'Invalid code');
       }
 
+      // Store auth result for context-aware success screen
+      setAuthResult({
+        is_new_user: data.is_new_user,
+        credits_remaining: data.credits_remaining,
+      });
+
       // Send auth tokens to background script via parent (content script)
       if (data.access_token) {
         window.parent.postMessage({
@@ -136,6 +154,8 @@ function SignupPrompt() {
             access_token: data.access_token,
             refresh_token: data.refresh_token,
             user: data.user,
+            is_new_user: data.is_new_user,
+            credits_remaining: data.credits_remaining,
           },
         }, '*');
       }
@@ -191,12 +211,50 @@ function SignupPrompt() {
     }
   };
 
-  // Success screen with loading for analysis
+  // Success screen - context-aware based on new vs returning user
   if (step === 'success') {
+    const isNewUser = authResult?.is_new_user ?? true;
+    const creditsRemaining = authResult?.credits_remaining ?? 0;
+
+    // Returning user with no credits - show upgrade prompt
+    if (!isNewUser && creditsRemaining === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center py-10 px-5 text-center">
+          <WarningCircle weight="fill" className="w-12 h-12 text-amber-500 mb-4" />
+          <div className="text-lg font-bold text-foreground mb-2">Welcome back!</div>
+          <div className="text-sm text-muted-foreground mb-6">
+            You've used all your free checks.
+          </div>
+          <button
+            onClick={() => onNeedsUpgrade?.()}
+            className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium px-6 py-3 rounded-lg transition-colors"
+          >
+            Get More Checks
+          </button>
+        </div>
+      );
+    }
+
+    // Returning user with credits
+    if (!isNewUser && creditsRemaining > 0) {
+      return (
+        <div className="flex flex-col items-center justify-center py-10 px-5 text-center">
+          <CheckCircle weight="fill" className="w-12 h-12 text-emerald-500 mb-4" />
+          <div className="text-lg font-bold text-foreground mb-2">Welcome back!</div>
+          <div className="text-sm text-muted-foreground mb-6">
+            You have {creditsRemaining} {creditsRemaining === 1 ? 'check' : 'checks'} remaining.
+          </div>
+          <SpinnerGap className="w-6 h-6 text-violet-500 animate-spin" />
+          <div className="text-xs text-muted-foreground mt-2">Analyzing hotel...</div>
+        </div>
+      );
+    }
+
+    // New user - default case
     return (
       <div className="flex flex-col items-center justify-center py-10 px-5 text-center">
         <CheckCircle weight="fill" className="w-12 h-12 text-emerald-500 mb-4" />
-        <div className="text-lg font-bold text-foreground mb-2">You're in!</div>
+        <div className="text-lg font-bold text-foreground mb-2">Welcome!</div>
         <div className="text-sm text-muted-foreground mb-6">
           5 free checks have been added to your account.
         </div>
@@ -270,9 +328,9 @@ function SignupPrompt() {
   return (
     <div className="flex flex-col items-center justify-center py-10 px-5 text-center">
       <Envelope weight="bold" className="w-12 h-12 text-violet-500 mb-4" />
-      <div className="text-lg font-bold text-foreground mb-2">Want 5 more free checks?</div>
+      <div className="text-lg font-bold text-foreground mb-2">Continue with email</div>
       <div className="text-sm text-muted-foreground mb-6">
-        Sign up free to get 5 more checks.
+        New users get 5 free checks.
         <br />
         No password needed — we'll email you a code.
       </div>

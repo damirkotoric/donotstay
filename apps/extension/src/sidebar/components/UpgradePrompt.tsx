@@ -14,29 +14,64 @@ function UpgradePrompt({ rateLimit: _rateLimit, onCreditsUpdated }: UpgradePromp
   const [checkoutState, setCheckoutState] = useState<CheckoutState>('idle');
   const [error, setError] = useState<string | null>(null);
   const [initialCredits, setInitialCredits] = useState<number | null>(null);
+  const [hasAttemptedCheckout, setHasAttemptedCheckout] = useState(false);
+  const [isCheckingCredits, setIsCheckingCredits] = useState(false);
+
+  // Check if credits have been added since we last showed this screen
+  useEffect(() => {
+    const checkCreditsOnMount = async () => {
+      try {
+        const response = await chrome.runtime.sendMessage({ type: 'GET_AUTH_STATUS' });
+        if (response?.user?.credits_remaining > 0) {
+          // Credits have been added! Trigger refresh
+          onCreditsUpdated?.();
+        }
+      } catch {
+        // Ignore errors
+      }
+    };
+    checkCreditsOnMount();
+  }, [onCreditsUpdated]);
 
   const pollForCredits = useCallback(async () => {
     const startTime = Date.now();
-    const timeout = 2 * 60 * 1000; // 2 minutes
-    const interval = 4000; // 4 seconds
+    const timeout = 3 * 60 * 1000; // 3 minutes
+    const interval = 3000; // 3 seconds
 
-    const poll = async () => {
-      if (Date.now() - startTime > timeout) {
-        setCheckoutState('idle');
-        return;
-      }
-
+    const checkCredits = async (): Promise<boolean> => {
       try {
         const response = await chrome.runtime.sendMessage({ type: 'GET_AUTH_STATUS' });
         if (response?.user?.credits_remaining !== undefined) {
-          if (initialCredits !== null && response.user.credits_remaining > initialCredits) {
+          // Check if credits increased OR if we now have credits when we had none
+          if ((initialCredits !== null && response.user.credits_remaining > initialCredits) ||
+              (initialCredits === 0 && response.user.credits_remaining > 0)) {
             setCheckoutState('success');
             onCreditsUpdated?.();
-            return;
+            return true;
           }
         }
       } catch {
         // Continue polling on error
+      }
+      return false;
+    };
+
+    const poll = async () => {
+      // Check if credits were added
+      if (await checkCredits()) {
+        return;
+      }
+
+      // Check if we've timed out
+      if (Date.now() - startTime > timeout) {
+        // One final check before giving up
+        if (await checkCredits()) {
+          return;
+        }
+        // Timed out - reset to idle so user can try again
+        setCheckoutState('idle');
+        setHasAttemptedCheckout(true);
+        return;
       }
 
       setTimeout(poll, interval);
@@ -44,6 +79,21 @@ function UpgradePrompt({ rateLimit: _rateLimit, onCreditsUpdated }: UpgradePromp
 
     poll();
   }, [initialCredits, onCreditsUpdated]);
+
+  const handleManualCheck = async () => {
+    setIsCheckingCredits(true);
+    try {
+      const response = await chrome.runtime.sendMessage({ type: 'GET_AUTH_STATUS' });
+      if (response?.user?.credits_remaining > 0) {
+        setCheckoutState('success');
+        onCreditsUpdated?.();
+      }
+    } catch {
+      // Ignore errors
+    } finally {
+      setIsCheckingCredits(false);
+    }
+  };
 
   useEffect(() => {
     if (checkoutState === 'polling') {
@@ -162,6 +212,17 @@ function UpgradePrompt({ rateLimit: _rateLimit, onCreditsUpdated }: UpgradePromp
         {checkoutState === 'loading' ? 'Loading...' : checkoutState === 'polling' ? 'Waiting for payment...' : 'Buy Credits'}
       </button>
 
+      {/* Paid already? Check again link */}
+      {hasAttemptedCheckout && checkoutState === 'idle' && (
+        <button
+          onClick={handleManualCheck}
+          disabled={isCheckingCredits}
+          className="text-sm text-violet-500 hover:text-violet-600 underline mt-2 mb-2 disabled:opacity-50"
+        >
+          {isCheckingCredits ? 'Checking...' : 'Paid already? Check again'}
+        </button>
+      )}
+
       {/* Powered by Stripe badge */}
       <div className="flex items-center gap-1.5 mt-4 text-muted-foreground">
         <span className="text-xs">Powered by</span>
@@ -209,14 +270,14 @@ function CreditPackOption({ credits, price, isPopular, selected, onSelect, disab
 function StripeLogo() {
   return (
     <svg
-      width="33"
-      height="14"
-      viewBox="0 0 60 25"
+      width="38"
+      height="16"
+      viewBox="0 0 512 214"
       fill="currentColor"
       xmlns="http://www.w3.org/2000/svg"
       className="text-muted-foreground"
     >
-      <path d="M59.64 14.28h-8.06c.19 1.93 1.6 2.55 3.2 2.55 1.64 0 2.96-.37 4.05-.95v3.32a12.48 12.48 0 0 1-4.56.86c-4.01 0-6.83-2.5-6.83-7.48 0-4.19 2.39-7.52 6.3-7.52 3.92 0 5.96 3.28 5.96 7.5 0 .4-.04 1.26-.06 1.72zm-5.92-5.62c-1.03 0-2.17.73-2.17 2.58h4.25c0-1.85-1.07-2.58-2.08-2.58zM41.49 20h-4.07V5.36h4.07v.84c.9-.63 2.03-1.2 3.47-1.2 3.34 0 5.85 2.75 5.85 7.33s-2.64 7.57-5.96 7.57c-1.37 0-2.43-.52-3.36-1.16V20zm3.14-10.85c-1.15 0-2.23.59-3.14 1.4v5.9c.85.63 1.8 1.01 3.14 1.01 1.79 0 2.94-1.53 2.94-4.21 0-2.66-1.22-4.1-2.94-4.1zM28.3 5h4.08v14.64H28.3V5zm0-4.64h4.08v3.32H28.3V.36zM23.63 9.06c-1.1-.37-2.17-.4-2.54-.4-.84 0-1.42.28-1.42.84 0 1.87 5.63.82 5.63 5.23 0 3.23-2.75 5.17-5.89 5.17-1.6 0-3.4-.4-4.67-1.1l.85-3.15c1.23.56 2.66.95 3.82.95 1.03 0 1.76-.34 1.76-1.07 0-2.08-5.63-.98-5.63-5.09 0-2.87 2.3-5.3 5.86-5.3 1.5 0 3.13.37 4.17.82l-.94 3.1zM5.8 13.44v-3.3a10.02 10.02 0 0 1 3.13-.56c1.65 0 3.14.19 3.14 1.57v8.29c-1.01.28-2.42.56-4.3.56C3.84 20 0 19.07 0 14.2 0 9.92 3.03 8.62 6.1 8.62c1.16 0 2.26.16 3.27.44l-.38 3.27c-.66-.15-1.48-.22-2.27-.22-1.38 0-2.69.37-2.69 2.08 0 1.8 1.19 2.23 2.47 2.23.69 0 1.28-.07 1.69-.19v-2.79H5.8z" />
+      <path d="M512 110.08C512 73.6711 494.364 44.9422 460.658 44.9422C426.809 44.9422 406.329 73.6711 406.329 109.796C406.329 152.604 430.507 174.222 465.209 174.222C482.133 174.222 494.933 170.382 504.604 164.978V136.533C494.933 141.369 483.84 144.356 469.76 144.356C455.964 144.356 443.733 139.52 442.169 122.738H511.716C511.716 120.889 512 113.493 512 110.08ZM441.742 96.5689C441.742 80.4978 451.556 73.8133 460.516 73.8133C469.191 73.8133 478.436 80.4978 478.436 96.5689H441.742ZM351.431 44.9422C337.493 44.9422 328.533 51.4844 323.556 56.0356L321.707 47.2178H290.418V213.049L325.973 205.511L326.116 165.262C331.236 168.96 338.773 174.222 351.289 174.222C376.747 174.222 399.929 153.742 399.929 108.658C399.787 67.4133 376.32 44.9422 351.431 44.9422ZM342.898 142.933C334.507 142.933 329.529 139.947 326.116 136.249L325.973 83.4844C329.671 79.36 334.791 76.5156 342.898 76.5156C355.84 76.5156 364.8 91.0222 364.8 109.653C364.8 128.711 355.982 142.933 342.898 142.933ZM241.493 36.5511L277.191 28.8711V0L241.493 7.53778V36.5511ZM241.493 47.36H277.191V171.804H241.493V47.36ZM203.236 57.8844L200.96 47.36H170.24V171.804H205.796V87.4667C214.187 76.5156 228.409 78.5067 232.818 80.0711V47.36C228.267 45.6533 211.627 42.5244 203.236 57.8844ZM132.124 16.4978L97.4222 23.8933L97.28 137.813C97.28 158.862 113.067 174.364 134.116 174.364C145.778 174.364 154.311 172.231 159.004 169.671V140.8C154.453 142.649 131.982 149.191 131.982 128.142V77.6533H159.004V47.36H131.982L132.124 16.4978ZM35.9822 83.4844C35.9822 77.9378 40.5333 75.8044 48.0711 75.8044C58.88 75.8044 72.5333 79.0756 83.3422 84.9067V51.4844C71.5378 46.7911 59.8756 44.9422 48.0711 44.9422C19.2 44.9422 0 60.0178 0 85.1911C0 124.444 54.0444 118.187 54.0444 135.111C54.0444 141.653 48.3556 143.787 40.3911 143.787C28.5867 143.787 13.5111 138.951 1.56444 132.409V166.258C14.7911 171.947 28.16 174.364 40.3911 174.364C69.9733 174.364 90.3111 159.716 90.3111 134.258C90.1689 91.8756 35.9822 99.4133 35.9822 83.4844Z" />
     </svg>
   );
 }

@@ -49,7 +49,13 @@ function App() {
           state.tier === 'anonymous' ? (
             <SignupPrompt />
           ) : (
-            <UpgradePrompt rateLimit={state.rate_limit} />
+            <UpgradePrompt
+              rateLimit={state.rate_limit}
+              onCreditsUpdated={() => {
+                // Tell the content script to re-trigger analysis
+                window.parent.postMessage({ type: 'DONOTSTAY_CREDITS_UPDATED' }, '*');
+              }}
+            />
           )
         )}
 
