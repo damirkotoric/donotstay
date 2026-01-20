@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { List, X } from '@phosphor-icons/react';
 import { siteConfig } from '@/lib/config';
-import { Logo } from '@/components/Logo';
+import { LogoFull } from '@/components/Logo';
 import { Button } from '@/components/ui/button';
 
 export function Navbar() {
@@ -61,9 +61,8 @@ export function Navbar() {
         >
           <div className="flex h-14 items-center justify-between">
             {/* Logo */}
-            <a href="/" className="flex items-center gap-2">
-              <Logo size={28}  />
-              <span className="text-xl font-bold text-foreground">DoNotStay</span>
+            <a href="/" className="flex items-center">
+              <LogoFull height={28} />
             </a>
 
             {/* Desktop Nav */}
@@ -119,9 +118,8 @@ export function Navbar() {
         }`}
       >
         <div className="flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <Logo size={28} />
-            <span className="text-lg font-bold text-foreground">DoNotStay</span>
+          <div className="flex items-center">
+            <LogoFull height={28} />
           </div>
           <button
             onClick={() => setIsDrawerOpen(false)}
