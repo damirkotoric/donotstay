@@ -18,6 +18,11 @@
       "matches": ["https://www.booking.com/hotel/*"],
       "js": ["content.js"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://donotstay.app/*", "http://localhost:3000/*"],
+      "js": ["auth-listener.js"],
+      "run_at": "document_idle"
     }
   ],
   "action": {

@@ -209,7 +209,7 @@ export default function LoginPage() {
               </div>
               <h1 className="text-xl font-bold text-stone-900 mb-2">You're signed in!</h1>
               <p className="text-stone-600 mb-6">
-                Return to the DoNotStay extension to continue analyzing hotels.
+                Return to the DoNotStay extension to continue running accommodation checks.
               </p>
               <p className="text-sm text-stone-500">
                 You can close this tab now.

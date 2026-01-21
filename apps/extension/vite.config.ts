@@ -59,11 +59,13 @@ export default defineConfig(({ mode }) => {
           button: resolve(__dirname, 'src/button/index.html'),
           badge: resolve(__dirname, 'src/badge/index.html'),
           content: resolve(__dirname, 'src/content/index.ts'),
+          'auth-listener': resolve(__dirname, 'src/content/auth-listener.ts'),
           background: resolve(__dirname, 'src/background/index.ts'),
         },
         output: {
           entryFileNames: (chunkInfo) => {
             if (chunkInfo.name === 'content') return 'content.js';
+            if (chunkInfo.name === 'auth-listener') return 'auth-listener.js';
             if (chunkInfo.name === 'background') return 'background.js';
             return 'assets/[name]-[hash].js';
           },
