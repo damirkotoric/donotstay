@@ -3,6 +3,9 @@ import { createRoot } from 'react-dom/client';
 import '../globals.css';
 import './styles.css';
 import type { UserInfo } from '@donotstay/shared';
+import { CREDIT_PACKS } from '@donotstay/shared';
+import type { CreditPackType } from '@donotstay/shared';
+import { CreditPackOption } from '@donotstay/ui';
 import { WEB_URL } from '../utils/constants';
 
 interface AnonymousInfo {
@@ -44,11 +47,33 @@ function ArrowSquareOut() {
   );
 }
 
+function PacksList({ onBuyPack }: { onBuyPack: (pack: CreditPackType) => void }) {
+  return (
+    <div className="packs-list">
+      <CreditPackOption
+        credits={CREDIT_PACKS.entry.credits}
+        price={CREDIT_PACKS.entry.priceDisplay}
+        onClick={() => onBuyPack('entry')}
+      />
+      <CreditPackOption
+        credits={CREDIT_PACKS.standard.credits}
+        price={CREDIT_PACKS.standard.priceDisplay}
+        isPopular
+        onClick={() => onBuyPack('standard')}
+      />
+      <CreditPackOption
+        credits={CREDIT_PACKS.traveler.credits}
+        price={CREDIT_PACKS.traveler.priceDisplay}
+        onClick={() => onBuyPack('traveler')}
+      />
+    </div>
+  );
+}
+
 function Popup() {
   const [authStatus, setAuthStatus] = useState<AuthStatus | null>(null);
 
   useEffect(() => {
-    // Check auth status
     chrome.runtime.sendMessage({ type: 'GET_AUTH_STATUS' }, (response) => {
       setAuthStatus(response);
     });
@@ -58,7 +83,7 @@ function Popup() {
     chrome.tabs.create({ url: `${WEB_URL}/auth/login` });
   };
 
-  const handleBuyPack = (packType: 'entry' | 'standard' | 'traveler') => {
+  const handleBuyPack = (packType: CreditPackType) => {
     chrome.runtime.sendMessage({ type: 'CREATE_CHECKOUT', pack_type: packType });
     window.close();
   };
@@ -86,64 +111,39 @@ function Popup() {
       </div>
 
       <div className="content">
-        {/* Main action area */}
         {hasZeroCredits ? (
-          // User has 0 credits - show pack selection
-          <div className="user-info">
-            <div className="email">{authStatus.user?.email}</div>
-            <div className="credits credits-zero">0 checks remaining</div>
-            <div className="packs">
-              <p className="packs-label">Buy checks to continue:</p>
-              <div className="pack-buttons">
-                <button className="btn btn-pack" onClick={() => handleBuyPack('entry')}>
-                  15 for $9.99
-                </button>
-                <button className="btn btn-pack" onClick={() => handleBuyPack('standard')}>
-                  50 for $19.99
-                </button>
-                <button className="btn btn-pack" onClick={() => handleBuyPack('traveler')}>
-                  150 for $39.99
-                </button>
-              </div>
+          <div className="user-section">
+            <div className="user-email">{authStatus.user?.email}</div>
+            <div className="credits-count credits-zero">0 checks remaining</div>
+            <div className="packs-section">
+              <div className="packs-label">Buy checks to continue:</div>
+              <PacksList onBuyPack={handleBuyPack} />
             </div>
           </div>
         ) : (
           <>
-            <p className="info">Visit a hotel page on Booking.com to run checks.</p>
-
+            <p className="info-text">
+              Visit a hotel page on Booking.com to run checks.
+            </p>
             <div className="divider" />
-
-            {/* User status */}
             {authStatus.authenticated ? (
-              <div className="user-info">
-                <div className="email">{authStatus.user?.email}</div>
-                <div className="credits">{creditsRemaining} checks remaining</div>
-                <div className="packs">
-                  <p className="packs-label">Buy more checks:</p>
-                  <div className="pack-buttons">
-                    <button className="btn btn-pack" onClick={() => handleBuyPack('entry')}>
-                      15 for $9.99
-                    </button>
-                    <button className="btn btn-pack" onClick={() => handleBuyPack('standard')}>
-                      50 for $19.99
-                    </button>
-                    <button className="btn btn-pack" onClick={() => handleBuyPack('traveler')}>
-                      150 for $39.99
-                    </button>
-                  </div>
+              <div className="user-section">
+                <div className="user-email">{authStatus.user?.email}</div>
+                <div className="credits-count">{creditsRemaining} checks remaining</div>
+                <div className="packs-section">
+                  <div className="packs-label">Buy more checks:</div>
+                  <PacksList onBuyPack={handleBuyPack} />
                 </div>
               </div>
             ) : (
-              <div className="auth-prompt">
+              <div className="anon-section">
                 {authStatus.anonymous && (
-                  <div className="anonymous-status">
-                    <span className="remaining">
-                      {authStatus.anonymous.checksRemaining} free {authStatus.anonymous.checksRemaining === 1 ? 'check' : 'checks'} remaining
-                    </span>
+                  <div className="anon-remaining">
+                    {authStatus.anonymous.checksRemaining} free {authStatus.anonymous.checksRemaining === 1 ? 'check' : 'checks'} remaining
                   </div>
                 )}
-                <p>Sign up free to get 10 more checks</p>
-                <button className="btn btn-secondary" onClick={handleSignIn}>
+                <p className="anon-cta">Sign up free to get 10 more checks</p>
+                <button className="signup-btn" onClick={handleSignIn}>
                   Sign Up Free
                 </button>
               </div>

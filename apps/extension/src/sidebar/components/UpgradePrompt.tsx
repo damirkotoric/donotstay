@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Check, Lock } from '@phosphor-icons/react';
-import { Button } from '@donotstay/ui';
+import { Button, CreditPackOption } from '@donotstay/ui';
 import { CREDIT_PACKS } from '@donotstay/shared';
 import type { RateLimitInfo, CreditPackType } from '@donotstay/shared';
 
@@ -183,28 +183,25 @@ function UpgradePrompt({ rateLimit: _rateLimit, onCreditsUpdated }: UpgradePromp
 
       <div className="w-full max-w-xs space-y-3 mb-6">
         <CreditPackOption
-          packType="entry"
           credits={CREDIT_PACKS.entry.credits}
           price={CREDIT_PACKS.entry.priceDisplay}
           selected={selectedPack === 'entry'}
-          onSelect={() => setSelectedPack('entry')}
+          onClick={() => setSelectedPack('entry')}
           disabled={checkoutState === 'loading' || checkoutState === 'polling'}
         />
         <CreditPackOption
-          packType="standard"
           credits={CREDIT_PACKS.standard.credits}
           price={CREDIT_PACKS.standard.priceDisplay}
           isPopular
           selected={selectedPack === 'standard'}
-          onSelect={() => setSelectedPack('standard')}
+          onClick={() => setSelectedPack('standard')}
           disabled={checkoutState === 'loading' || checkoutState === 'polling'}
         />
         <CreditPackOption
-          packType="traveler"
           credits={CREDIT_PACKS.traveler.credits}
           price={CREDIT_PACKS.traveler.priceDisplay}
           selected={selectedPack === 'traveler'}
-          onSelect={() => setSelectedPack('traveler')}
+          onClick={() => setSelectedPack('traveler')}
           disabled={checkoutState === 'loading' || checkoutState === 'polling'}
         />
       </div>
@@ -249,41 +246,6 @@ function UpgradePrompt({ rateLimit: _rateLimit, onCreditsUpdated }: UpgradePromp
         <StripeLogo />
       </div>
     </div>
-  );
-}
-
-interface CreditPackOptionProps {
-  packType: CreditPackType;
-  credits: number;
-  price: string;
-  isPopular?: boolean;
-  selected: boolean;
-  onSelect: () => void;
-  disabled?: boolean;
-}
-
-function CreditPackOption({ credits, price, isPopular, selected, onSelect, disabled }: CreditPackOptionProps) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      disabled={disabled}
-      className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-        selected
-          ? 'border-primary bg-primary/10 ring-2 ring-ring/50'
-          : isPopular
-          ? 'border-primary/50 bg-primary/5 hover:bg-primary/10'
-          : 'border-border bg-background hover:bg-muted/50'
-      }`}
-    >
-      <span className="text-sm font-medium text-foreground">
-        {credits} checks
-        {isPopular && (
-          <span className="ml-2 text-xs text-primary font-semibold">Popular</span>
-        )}
-      </span>
-      <span className="text-sm font-bold text-foreground">{price}</span>
-    </button>
   );
 }
 
