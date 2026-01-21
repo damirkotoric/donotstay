@@ -46,30 +46,13 @@ function ArrowSquareOut() {
 
 function Popup() {
   const [authStatus, setAuthStatus] = useState<AuthStatus | null>(null);
-  const [isOnHotelPage, setIsOnHotelPage] = useState(false);
 
   useEffect(() => {
     // Check auth status
     chrome.runtime.sendMessage({ type: 'GET_AUTH_STATUS' }, (response) => {
       setAuthStatus(response);
     });
-
-    // Check if on hotel page
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      const tab = tabs[0];
-      setIsOnHotelPage(tab?.url?.includes('booking.com/hotel/') ?? false);
-    });
   }, []);
-
-  const handleAnalyze = () => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      const tab = tabs[0];
-      if (tab?.id) {
-        chrome.tabs.sendMessage(tab.id, { type: 'TRIGGER_ANALYSIS' });
-        window.close();
-      }
-    });
-  };
 
   const handleSignIn = () => {
     chrome.tabs.create({ url: `${WEB_URL}/auth/login` });
@@ -114,14 +97,7 @@ function Popup() {
           </div>
         ) : (
           <>
-            {/* Hotel page check or message */}
-            {isOnHotelPage ? (
-              <button className="btn btn-primary" onClick={handleAnalyze}>
-                Check This Accommodation
-              </button>
-            ) : (
-              <p className="info">Visit a hotel page on Booking.com to analyze reviews.</p>
-            )}
+            <p className="info">Visit a hotel page on Booking.com to analyze reviews.</p>
 
             <div className="divider" />
 
