@@ -1,0 +1,349 @@
+'use client';
+
+import { useState, useRef, useEffect } from 'react';
+
+type Step = 'email' | 'code' | 'success';
+
+export default function LoginPage() {
+  const [step, setStep] = useState<Step>('email');
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState(['', '', '', '', '', '']);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [canResend, setCanResend] = useState(false);
+  const [resendCountdown, setResendCountdown] = useState(30);
+
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Countdown timer for resend
+  useEffect(() => {
+    if (step !== 'code') return;
+
+    setResendCountdown(30);
+    setCanResend(false);
+
+    const timer = setInterval(() => {
+      setResendCountdown((prev) => {
+        if (prev <= 1) {
+          setCanResend(true);
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [step]);
+
+  const handleEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!email || !email.includes('@')) {
+      setErrorMessage('Please enter a valid email');
+      setStatus('error');
+      return;
+    }
+
+    setStatus('loading');
+    setErrorMessage('');
+
+    try {
+      const response = await fetch('/api/auth/magic-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to send code');
+      }
+
+      setStatus('idle');
+      setStep('code');
+      setTimeout(() => inputRefs.current[0]?.focus(), 100);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Something went wrong');
+      setStatus('error');
+    }
+  };
+
+  const handleCodeChange = (index: number, value: string) => {
+    const digit = value.replace(/\D/g, '').slice(-1);
+
+    const newCode = [...code];
+    newCode[index] = digit;
+    setCode(newCode);
+    setErrorMessage('');
+
+    if (digit && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+
+    if (digit && index === 5) {
+      const fullCode = newCode.join('');
+      if (fullCode.length === 6) {
+        verifyCode(fullCode);
+      }
+    }
+  };
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !code[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (pasted.length === 6) {
+      const newCode = pasted.split('');
+      setCode(newCode);
+      verifyCode(pasted);
+    }
+  };
+
+  const verifyCode = async (codeString: string) => {
+    setStatus('loading');
+    setErrorMessage('');
+
+    try {
+      const response = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code: codeString }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Invalid code');
+      }
+
+      // Store auth for extension to pick up
+      if (data.access_token) {
+        localStorage.setItem('donotstay_auth', JSON.stringify({
+          access_token: data.access_token,
+          user: data.user,
+        }));
+
+        // Also post message for extension content script
+        window.postMessage({
+          type: 'DONOTSTAY_AUTH',
+          access_token: data.access_token,
+          user: data.user,
+        }, '*');
+      }
+
+      setStatus('idle');
+      setStep('success');
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Invalid code');
+      setStatus('error');
+      setCode(['', '', '', '', '', '']);
+      inputRefs.current[0]?.focus();
+    }
+  };
+
+  const handleResend = async () => {
+    if (!canResend) return;
+
+    setStatus('loading');
+    setErrorMessage('');
+
+    try {
+      const response = await fetch('/api/auth/magic-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to resend code');
+      }
+
+      setStatus('idle');
+      setCanResend(false);
+      setResendCountdown(30);
+      setCode(['', '', '', '', '', '']);
+      inputRefs.current[0]?.focus();
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to resend');
+      setStatus('error');
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-stone-50 px-4">
+      <div className="w-full max-w-md">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <a href="/" className="inline-block">
+            <svg width="164" height="32" viewBox="0 0 164 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="32" height="32" rx="4" fill="#E12E2E"/>
+              <path d="M26.8544 18.6747L25.7294 9.67469C25.6501 9.03983 25.3417 8.45579 24.8621 8.03232C24.3825 7.60884 23.7648 7.37509 23.125 7.375H7C6.50272 7.375 6.02581 7.57254 5.67417 7.92417C5.32254 8.27581 5.125 8.75272 5.125 9.25V17.5C5.125 17.7462 5.1735 17.99 5.26773 18.2175C5.36195 18.445 5.50006 18.6517 5.67417 18.8258C5.84828 18.9999 6.05498 19.138 6.28247 19.2323C6.50995 19.3265 6.75377 19.375 7 19.375H10.8044L14.2441 26.2534C14.3375 26.4402 14.4811 26.5973 14.6588 26.707C14.8364 26.8168 15.0412 26.875 15.25 26.875C16.3436 26.8738 17.3921 26.4388 18.1654 25.6654C18.9388 24.8921 19.3738 23.8436 19.375 22.75V21.625H24.25C24.6222 21.6249 24.99 21.5458 25.3293 21.3927C25.6685 21.2396 25.9713 21.0162 26.2176 20.7372C26.4638 20.4582 26.648 20.13 26.7578 19.7744C26.8676 19.4188 26.9005 19.044 26.8544 18.6747ZM10.375 17.125H7.375V9.625H10.375V17.125ZM24.5312 19.2484C24.496 19.2883 24.4527 19.3202 24.4042 19.342C24.3557 19.3638 24.3032 19.375 24.25 19.375H18.25C17.9516 19.375 17.6655 19.4935 17.4545 19.7045C17.2435 19.9155 17.125 20.2016 17.125 20.5V22.75C17.125 23.1351 17.0064 23.5109 16.7853 23.8262C16.5642 24.1416 16.2514 24.3812 15.8894 24.5125L12.625 17.9847V9.625H23.125C23.2168 9.62428 23.3058 9.65729 23.3749 9.71777C23.444 9.77825 23.4885 9.862 23.5 9.95312L24.625 18.9531C24.6313 19.0062 24.6262 19.06 24.61 19.1109C24.5939 19.1618 24.567 19.2087 24.5312 19.2484Z" fill="white"/>
+              <path d="M153.186 29.3011C152.646 29.3011 152.132 29.2585 151.643 29.1733C151.154 29.0937 150.725 28.983 150.356 28.8409L151.379 25.5C151.765 25.6364 152.117 25.7244 152.436 25.7642C152.759 25.804 153.035 25.7812 153.262 25.696C153.495 25.6108 153.663 25.4489 153.765 25.2102L153.867 24.9716L149.265 11.3011H154.174L156.288 20.3693H156.424L158.572 11.3011H163.515L158.742 25.483C158.504 26.2045 158.157 26.8523 157.703 27.4261C157.254 28.0057 156.663 28.4631 155.93 28.7983C155.197 29.1335 154.282 29.3011 153.186 29.3011Z" fill="black"/>
+              <path d="M140.739 24.5966C139.903 24.5966 139.165 24.4602 138.523 24.1875C137.886 23.9091 137.386 23.4886 137.023 22.9261C136.659 22.3636 136.477 21.6477 136.477 20.7784C136.477 20.0625 136.6 19.4517 136.844 18.946C137.088 18.4347 137.429 18.017 137.867 17.6932C138.304 17.3693 138.813 17.1222 139.392 16.9517C139.977 16.7812 140.608 16.6704 141.284 16.6193C142.017 16.5625 142.605 16.4943 143.048 16.4148C143.497 16.3295 143.821 16.2131 144.02 16.0653C144.219 15.9119 144.318 15.7102 144.318 15.4602V15.4261C144.318 15.0852 144.188 14.8239 143.926 14.642C143.665 14.4602 143.33 14.3693 142.921 14.3693C142.472 14.3693 142.105 14.4687 141.821 14.6676C141.543 14.8608 141.375 15.1591 141.318 15.5625H136.989C137.046 14.767 137.298 14.0341 137.747 13.3636C138.202 12.6875 138.864 12.1477 139.733 11.7443C140.602 11.3352 141.688 11.1307 142.989 11.1307C143.926 11.1307 144.767 11.2415 145.511 11.4631C146.256 11.679 146.889 11.9829 147.412 12.375C147.935 12.7614 148.332 13.2159 148.605 13.7386C148.884 14.2557 149.023 14.8182 149.023 15.4261V24.392H144.625V22.5511H144.523C144.261 23.0398 143.943 23.4347 143.568 23.7358C143.199 24.0369 142.776 24.2557 142.298 24.392C141.827 24.5284 141.307 24.5966 140.739 24.5966ZM142.273 21.6307C142.631 21.6307 142.966 21.5568 143.278 21.4091C143.597 21.2614 143.855 21.0483 144.054 20.7699C144.253 20.4915 144.352 20.1534 144.352 19.7557V18.6648C144.227 18.7159 144.094 18.7642 143.952 18.8097C143.815 18.8551 143.668 18.8977 143.509 18.9375C143.355 18.9773 143.19 19.0142 143.014 19.0483C142.844 19.0824 142.665 19.1136 142.477 19.142C142.114 19.1989 141.815 19.2926 141.582 19.4233C141.355 19.5483 141.185 19.7045 141.071 19.892C140.963 20.0739 140.909 20.2784 140.909 20.5057C140.909 20.8693 141.037 21.1477 141.293 21.3409C141.548 21.5341 141.875 21.6307 142.273 21.6307Z" fill="black"/>
+              <path d="M135.651 11.3011V14.7102H127.026V11.3011H135.651ZM128.697 8.16477H133.401V20.1818C133.401 20.3636 133.432 20.517 133.495 20.642C133.557 20.7614 133.654 20.8523 133.785 20.9148C133.915 20.9716 134.083 21 134.288 21C134.43 21 134.594 20.983 134.782 20.9489C134.975 20.9148 135.117 20.8864 135.208 20.8636L135.89 24.1705C135.68 24.233 135.379 24.3097 134.986 24.4006C134.6 24.4915 134.14 24.5511 133.606 24.5795C132.526 24.6364 131.62 24.5256 130.887 24.2472C130.154 23.9631 129.603 23.517 129.234 22.9091C128.864 22.3011 128.685 21.5398 128.697 20.625V8.16477Z" fill="black"/>
+              <path d="M121.681 12.392C121.636 11.8239 121.422 11.3807 121.042 11.0625C120.667 10.7443 120.096 10.5852 119.329 10.5852C118.84 10.5852 118.439 10.6449 118.127 10.7642C117.82 10.8778 117.593 11.0341 117.445 11.233C117.297 11.4318 117.221 11.6591 117.215 11.9148C117.204 12.125 117.241 12.3153 117.326 12.4858C117.417 12.6506 117.559 12.8011 117.752 12.9375C117.945 13.0682 118.192 13.1875 118.493 13.2955C118.795 13.4034 119.153 13.5 119.567 13.5852L120.999 13.892C121.965 14.0966 122.792 14.3665 123.479 14.7017C124.167 15.0369 124.729 15.4318 125.167 15.8864C125.604 16.3352 125.925 16.8409 126.13 17.4034C126.34 17.9659 126.448 18.5795 126.454 19.2443C126.448 20.392 126.161 21.3636 125.593 22.1591C125.025 22.9545 124.212 23.5597 123.155 23.9744C122.104 24.3892 120.84 24.5966 119.363 24.5966C117.846 24.5966 116.522 24.3722 115.391 23.9233C114.266 23.4744 113.391 22.7841 112.766 21.8523C112.147 20.9148 111.834 19.7159 111.829 18.2557H116.329C116.357 18.7898 116.491 19.2386 116.729 19.6023C116.968 19.9659 117.303 20.2415 117.735 20.429C118.172 20.6165 118.692 20.7102 119.295 20.7102C119.8 20.7102 120.224 20.6477 120.564 20.5227C120.905 20.3977 121.164 20.2244 121.34 20.0028C121.516 19.7812 121.607 19.5284 121.613 19.2443C121.607 18.9773 121.519 18.7443 121.349 18.5455C121.184 18.3409 120.911 18.1591 120.53 18C120.15 17.8352 119.636 17.6818 118.988 17.5398L117.249 17.1648C115.704 16.8295 114.485 16.2699 113.593 15.4858C112.707 14.696 112.266 13.6193 112.272 12.2557C112.266 11.1477 112.562 10.179 113.158 9.34943C113.761 8.5142 114.593 7.86363 115.655 7.39772C116.724 6.93181 117.948 6.69886 119.329 6.69886C120.738 6.69886 121.957 6.93466 122.985 7.40625C124.013 7.87784 124.806 8.54261 125.363 9.40057C125.925 10.2528 126.209 11.25 126.215 12.392H121.681Z" fill="black"/>
+              <path d="M110.9 11.3011V14.7102H102.275V11.3011H110.9ZM103.946 8.16477H108.65V20.1818C108.65 20.3636 108.682 20.517 108.744 20.642C108.807 20.7614 108.903 20.8523 109.034 20.9148C109.165 20.9716 109.332 21 109.537 21C109.679 21 109.843 20.983 110.031 20.9489C110.224 20.9148 110.366 20.8864 110.457 20.8636L111.139 24.1705C110.929 24.233 110.628 24.3097 110.236 24.4006C109.849 24.4915 109.389 24.5511 108.855 24.5795C107.775 24.6364 106.869 24.5256 106.136 24.2472C105.403 23.9631 104.852 23.517 104.483 22.9091C104.113 22.3011 103.934 21.5398 103.946 20.625V8.16477Z" fill="black"/>
+              <path d="M94.8803 24.6307C93.4599 24.6307 92.2439 24.3494 91.2326 23.7869C90.2212 23.2187 89.4457 22.429 88.9059 21.4176C88.3661 20.4006 88.0962 19.2216 88.0962 17.8807C88.0962 16.5398 88.3661 15.3636 88.9059 14.3523C89.4457 13.3352 90.2212 12.5454 91.2326 11.9829C92.2439 11.4148 93.4599 11.1307 94.8803 11.1307C96.3008 11.1307 97.5167 11.4148 98.528 11.9829C99.5394 12.5454 100.315 13.3352 100.855 14.3523C101.395 15.3636 101.664 16.5398 101.664 17.8807C101.664 19.2216 101.395 20.4006 100.855 21.4176C100.315 22.429 99.5394 23.2187 98.528 23.7869C97.5167 24.3494 96.3008 24.6307 94.8803 24.6307ZM94.9144 21.1534C95.3121 21.1534 95.6559 21.0199 95.9457 20.7528C96.2354 20.4858 96.4599 20.1051 96.6189 19.6108C96.778 19.1165 96.8576 18.5284 96.8576 17.8466C96.8576 17.1591 96.778 16.571 96.6189 16.0824C96.4599 15.5881 96.2354 15.2074 95.9457 14.9403C95.6559 14.6733 95.3121 14.5398 94.9144 14.5398C94.494 14.5398 94.1332 14.6733 93.832 14.9403C93.5309 15.2074 93.3008 15.5881 93.1417 16.0824C92.9826 16.571 92.903 17.1591 92.903 17.8466C92.903 18.5284 92.9826 19.1165 93.1417 19.6108C93.3008 20.1051 93.5309 20.4858 93.832 20.7528C94.1332 21.0199 94.494 21.1534 94.9144 21.1534Z" fill="black"/>
+              <path d="M86.7438 6.9375V24.392H82.7893L76.4825 15.2216H76.3802V24.392H71.6416V6.9375H75.6643L81.8688 16.0739H82.0052V6.9375H86.7438Z" fill="black"/>
+              <path d="M63.4966 24.6307C62.0761 24.6307 60.8602 24.3494 59.8488 23.7869C58.8375 23.2187 58.0619 22.429 57.5221 21.4176C56.9824 20.4006 56.7125 19.2216 56.7125 17.8807C56.7125 16.5398 56.9824 15.3636 57.5221 14.3523C58.0619 13.3352 58.8375 12.5454 59.8488 11.9829C60.8602 11.4148 62.0761 11.1307 63.4966 11.1307C64.917 11.1307 66.1329 11.4148 67.1443 11.9829C68.1557 12.5454 68.9312 13.3352 69.471 14.3523C70.0108 15.3636 70.2807 16.5398 70.2807 17.8807C70.2807 19.2216 70.0108 20.4006 69.471 21.4176C68.9312 22.429 68.1557 23.2187 67.1443 23.7869C66.1329 24.3494 64.917 24.6307 63.4966 24.6307ZM63.5307 21.1534C63.9284 21.1534 64.2721 21.0199 64.5619 20.7528C64.8517 20.4858 65.0761 20.1051 65.2352 19.6108C65.3943 19.1165 65.4738 18.5284 65.4738 17.8466C65.4738 17.1591 65.3943 16.571 65.2352 16.0824C65.0761 15.5881 64.8517 15.2074 64.5619 14.9403C64.2721 14.6733 63.9284 14.5398 63.5307 14.5398C63.1102 14.5398 62.7494 14.6733 62.4483 14.9403C62.1471 15.2074 61.917 15.5881 61.7579 16.0824C61.5988 16.571 61.5193 17.1591 61.5193 17.8466C61.5193 18.5284 61.5988 19.1165 61.7579 19.6108C61.917 20.1051 62.1471 20.4858 62.4483 20.7528C62.7494 21.0199 63.1102 21.1534 63.5307 21.1534Z" fill="black"/>
+              <path d="M46.7159 24.392H40V6.9375H46.6477C48.4432 6.9375 49.9943 7.28693 51.3011 7.9858C52.6136 8.67898 53.625 9.67898 54.3352 10.9858C55.0511 12.2869 55.4091 13.8466 55.4091 15.6648C55.4091 17.483 55.054 19.0455 54.3438 20.3523C53.6335 21.6534 52.6278 22.6534 51.3267 23.3523C50.0256 24.0455 48.4886 24.392 46.7159 24.392ZM44.7386 20.3693H46.5455C47.4091 20.3693 48.1449 20.2301 48.7528 19.9517C49.3665 19.6733 49.8324 19.1932 50.1506 18.5114C50.4744 17.8295 50.6364 16.8807 50.6364 15.6648C50.6364 14.4489 50.4716 13.5 50.142 12.8182C49.8182 12.1364 49.3409 11.6562 48.7102 11.3778C48.0852 11.0994 47.3182 10.9602 46.4091 10.9602H44.7386V20.3693Z" fill="black"/>
+            </svg>
+          </a>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-8">
+          {/* Success screen */}
+          {step === 'success' && (
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h1 className="text-xl font-bold text-stone-900 mb-2">You're signed in!</h1>
+              <p className="text-stone-600 mb-6">
+                Return to the DoNotStay extension to continue analyzing hotels.
+              </p>
+              <p className="text-sm text-stone-500">
+                You can close this tab now.
+              </p>
+            </div>
+          )}
+
+          {/* Code input screen */}
+          {step === 'code' && (
+            <div className="text-center">
+              <button
+                onClick={() => {
+                  setStep('email');
+                  setCode(['', '', '', '', '', '']);
+                  setErrorMessage('');
+                }}
+                className="flex items-center gap-1 text-sm text-stone-600 hover:text-stone-900 mb-6"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back
+              </button>
+
+              <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-stone-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <h1 className="text-xl font-bold text-stone-900 mb-2">Enter your code</h1>
+              <p className="text-stone-600 mb-6">
+                We sent a 6-digit code to<br />
+                <span className="font-medium">{email}</span>
+              </p>
+
+              <div className="flex justify-center gap-2 mb-4" onPaste={handlePaste}>
+                {code.map((digit, index) => (
+                  <input
+                    key={index}
+                    ref={(el) => { inputRefs.current[index] = el; }}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleCodeChange(index, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(index, e)}
+                    disabled={status === 'loading'}
+                    className="w-12 h-14 text-center text-xl font-bold border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent disabled:opacity-50"
+                  />
+                ))}
+              </div>
+
+              {status === 'error' && (
+                <p className="text-sm text-red-600 mb-4">{errorMessage}</p>
+              )}
+
+              {status === 'loading' && (
+                <div className="flex justify-center mb-4">
+                  <svg className="animate-spin h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                </div>
+              )}
+
+              <button
+                onClick={handleResend}
+                disabled={!canResend || status === 'loading'}
+                className="text-sm text-stone-600 hover:text-stone-900 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {canResend ? 'Resend code' : `Resend code in ${resendCountdown}s`}
+              </button>
+            </div>
+          )}
+
+          {/* Email input screen */}
+          {step === 'email' && (
+            <div className="text-center">
+              <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-stone-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <h1 className="text-xl font-bold text-stone-900 mb-2">Sign in with email</h1>
+              <p className="text-stone-600 mb-6">
+                New users get 10 free checks.<br />
+                No password needed — we'll email you a code.
+              </p>
+
+              <form onSubmit={handleEmailSubmit} className="space-y-4">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  disabled={status === 'loading'}
+                  className="w-full h-12 px-4 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent disabled:opacity-50"
+                />
+
+                {status === 'error' && (
+                  <p className="text-sm text-red-600">{errorMessage}</p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={status === 'loading'}
+                  className="w-full h-12 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {status === 'loading' ? (
+                    <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                      </svg>
+                      Send Code
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+          )}
+        </div>
+
+        <p className="text-center text-sm text-stone-500 mt-6">
+          By signing in, you agree to our{' '}
+          <a href="/terms" className="underline hover:text-stone-700">Terms</a>
+          {' '}and{' '}
+          <a href="/privacy" className="underline hover:text-stone-700">Privacy Policy</a>.
+        </p>
+      </div>
+    </div>
+  );
+}
