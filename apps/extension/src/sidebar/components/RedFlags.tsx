@@ -135,7 +135,7 @@ function RedFlags({ flags, reviewCount, visibleCount }: RedFlagsProps) {
                 />
               )}
               <div className="flex items-start justify-between mb-1 relative z-10">
-                <span className={`font-semibold text-foreground ${blurClass}`}>{flag.issue}</span>
+                <span className={`text-base font-semibold text-foreground ${blurClass}`}>{flag.issue}</span>
                 <span
                   className={`text-[11px] tracking-wider mt-0.5 px-2 py-0.5 rounded font-semibold uppercase ${getSeverityStyles(flag.severity)}`}
                 >

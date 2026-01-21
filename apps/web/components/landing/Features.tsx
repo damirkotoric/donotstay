@@ -1,17 +1,17 @@
 'use client';
 
 import {
-  WarningCircle,
+  FlagBannerFold,
   Quotes,
-  ChartBar,
-  Lightning,
+  Target,
+  Timer,
   ShieldCheck,
   Sparkle,
 } from '@phosphor-icons/react';
 
 const features = [
   {
-    icon: WarningCircle,
+    icon: FlagBannerFold,
     title: 'Red Flag Detection',
     description:
       'Identifies critical issues like cleanliness problems, noise, or hidden fees.',
@@ -29,16 +29,16 @@ const features = [
       'Every red flag links back to actual guest quotes. No AI guesswork.',
   },
   {
-    icon: ChartBar,
+    icon: Target,
     title: 'Confidence Score',
     description:
-      'See how confident our AI is based on review quantity and consistency.',
+      'Know when to trust the verdict and when to dig deeper.',
   },
   {
-    icon: Lightning,
-    title: 'Instant Analysis',
+    icon: Timer,
+    title: 'Stop Wasting Time',
     description:
-      'Get results in seconds, not minutes of manual review reading.',
+      'We read hundreds of reviews so you don\'t have to.',
   },
   {
     icon: ShieldCheck,

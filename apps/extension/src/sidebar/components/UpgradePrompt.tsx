@@ -135,7 +135,7 @@ function UpgradePrompt({ rateLimit: _rateLimit, onCreditsUpdated }: UpgradePromp
         setError('Failed to create checkout session');
         setCheckoutState('error');
       }
-    } catch (err) {
+    } catch {
       setError('Network error. Please try again.');
       setCheckoutState('error');
     }
