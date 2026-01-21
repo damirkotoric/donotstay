@@ -10,26 +10,67 @@ const rotatingWords = ['mold', 'thin walls', 'rude staff', 'noise', 'bedbugs', '
 
 export function Hero() {
   const imageRef = useRef<HTMLDivElement>(null);
-  const [rotation, setRotation] = useState(10);
+  const [rotation, setRotation] = useState(20);
+  const [opacity, setOpacity] = useState(0);
 
   useEffect(() => {
-    const handleScroll = () => {
-      if (!imageRef.current) return;
+    const stiffness = 0.03;
+    const damping = 0.7;
 
+    let currentRotation = 20;
+    let currentOpacity = 0;
+    let targetRotation = 20;
+    let rotationVelocity = 0;
+    let opacityVelocity = 0;
+    let frame: number;
+    let hasStarted = false;
+
+    const getScrollTarget = () => {
+      if (!imageRef.current) return 20;
       const rect = imageRef.current.getBoundingClientRect();
       const windowHeight = window.innerHeight;
-
-      // Calculate progress based on element's top position
-      const progress = Math.max(0, Math.min(1, 1 - rect.top / windowHeight));
-
-      // Interpolate rotation from 10deg to 0deg
-      setRotation(20 * (1 - progress));
+      const progress = Math.max(0, Math.min(1, (windowHeight - rect.top) / (windowHeight * 0.6)));
+      return 20 * (1 - progress);
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll(); // Initial check
+    const animate = () => {
+      // Rotation spring
+      const rotDisplacement = targetRotation - currentRotation;
+      rotationVelocity += rotDisplacement * stiffness;
+      rotationVelocity *= damping;
+      currentRotation += rotationVelocity;
+      setRotation(currentRotation);
 
-    return () => window.removeEventListener('scroll', handleScroll);
+      // Opacity spring (fades to 1 once, then stays)
+      if (currentOpacity < 0.999) {
+        const opDisplacement = 1 - currentOpacity;
+        opacityVelocity += opDisplacement * stiffness;
+        opacityVelocity *= damping;
+        currentOpacity = Math.max(0, Math.min(1, currentOpacity + opacityVelocity));
+        setOpacity(currentOpacity);
+      }
+
+      frame = requestAnimationFrame(animate);
+    };
+
+    const handleScroll = () => {
+      if (!hasStarted) return;
+      targetRotation = getScrollTarget();
+    };
+
+    // After delay: start both animations together, listen to scroll
+    const delayTimeout = setTimeout(() => {
+      hasStarted = true;
+      targetRotation = getScrollTarget();
+      window.addEventListener('scroll', handleScroll, { passive: true });
+      frame = requestAnimationFrame(animate);
+    }, 500);
+
+    return () => {
+      clearTimeout(delayTimeout);
+      window.removeEventListener('scroll', handleScroll);
+      cancelAnimationFrame(frame);
+    };
   }, []);
 
   return (
@@ -71,14 +112,16 @@ export function Hero() {
         {/* Screenshot - full width below with 3D perspective */}
         <div ref={imageRef} className="relative mt-16 lg:mt-20" style={{ perspective: '2000px' }}>
           <div
-            className="max-h-[800px] overflow-hidden rounded-xl shadow-2xl border transition-transform duration-100 ease-out"
-            style={{ transform: `rotateX(${rotation}deg)` }}
+            className="overflow-hidden bg-gradient-to-br from-white to-muted rounded-xl shadow-2xl border p-2"
+            style={{ transform: `rotateX(${rotation}deg)`, opacity }}
           >
-            <img
-              src="/gallery-1.jpg"
-              alt="DoNotStay extension showing hotel review analysis"
-              className="w-full"
-            />
+            <div className="max-h-[800px] bg-white border rounded-lg overflow-hidden">
+              <img
+                src="/gallery-1.jpg"
+                alt="DoNotStay extension showing hotel review analysis"
+                className="w-full"
+              />
+            </div>
           </div>
         </div>
       </div>
