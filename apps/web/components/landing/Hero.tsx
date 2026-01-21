@@ -119,6 +119,8 @@ export function Hero() {
               <img
                 src="/gallery-1.jpg"
                 alt="DoNotStay extension showing hotel review analysis"
+                width={2500}
+                height={2500}
                 className="w-full"
               />
             </div>
