@@ -303,6 +303,21 @@ export function enforceVerdictRules(
   const sixMonthsAgo = new Date();
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
+  // Check for mold issues - ANY mold mention = Do Not Stay
+  const moldKeywords = /\b(mold|mould|mildew|fungus)\b/i;
+  const moldFlags = verdict.red_flags.filter(flag =>
+    moldKeywords.test(flag.issue) && flag.severity === 'critical'
+  );
+
+  if (moldFlags.length > 0 && verdict.verdict !== 'Do Not Stay') {
+    const totalMoldMentions = moldFlags.reduce((sum, f) => sum + f.mention_count, 0);
+    return {
+      verdict: 'Do Not Stay',
+      wasOverridden: true,
+      reason: `Overridden: ${totalMoldMentions} mold report(s) detected`
+    };
+  }
+
   // Check for pest issues (rats, cockroaches, bedbugs, roaches)
   const pestKeywords = /\b(pest|rat|rats|mouse|mice|rodent|cockroach|roach|bedbug|bed\s*bug)\b/i;
 
