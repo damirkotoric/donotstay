@@ -58,8 +58,9 @@ function Popup() {
     chrome.tabs.create({ url: `${WEB_URL}/auth/login` });
   };
 
-  const handleBuyCredits = () => {
-    chrome.tabs.create({ url: `${WEB_URL}/#pricing` });
+  const handleBuyPack = (packType: 'entry' | 'standard' | 'traveler') => {
+    chrome.runtime.sendMessage({ type: 'CREATE_CHECKOUT', pack_type: packType });
+    window.close();
   };
 
   if (authStatus === null) {
@@ -87,17 +88,28 @@ function Popup() {
       <div className="content">
         {/* Main action area */}
         {hasZeroCredits ? (
-          // User has 0 credits - only show Buy Credits
+          // User has 0 credits - show pack selection
           <div className="user-info">
             <div className="email">{authStatus.user?.email}</div>
             <div className="credits credits-zero">0 checks remaining</div>
-            <button className="btn btn-primary" onClick={handleBuyCredits}>
-              Buy Credits
-            </button>
+            <div className="packs">
+              <p className="packs-label">Buy checks to continue:</p>
+              <div className="pack-buttons">
+                <button className="btn btn-pack" onClick={() => handleBuyPack('entry')}>
+                  15 for $9.99
+                </button>
+                <button className="btn btn-pack" onClick={() => handleBuyPack('standard')}>
+                  50 for $19.99
+                </button>
+                <button className="btn btn-pack" onClick={() => handleBuyPack('traveler')}>
+                  150 for $39.99
+                </button>
+              </div>
+            </div>
           </div>
         ) : (
           <>
-            <p className="info">Visit a hotel page on Booking.com to analyze reviews.</p>
+            <p className="info">Visit a hotel page on Booking.com to run checks.</p>
 
             <div className="divider" />
 
@@ -106,6 +118,20 @@ function Popup() {
               <div className="user-info">
                 <div className="email">{authStatus.user?.email}</div>
                 <div className="credits">{creditsRemaining} checks remaining</div>
+                <div className="packs">
+                  <p className="packs-label">Buy more checks:</p>
+                  <div className="pack-buttons">
+                    <button className="btn btn-pack" onClick={() => handleBuyPack('entry')}>
+                      15 for $9.99
+                    </button>
+                    <button className="btn btn-pack" onClick={() => handleBuyPack('standard')}>
+                      50 for $19.99
+                    </button>
+                    <button className="btn btn-pack" onClick={() => handleBuyPack('traveler')}>
+                      150 for $39.99
+                    </button>
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="auth-prompt">
