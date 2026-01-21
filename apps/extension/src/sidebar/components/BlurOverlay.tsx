@@ -1,5 +1,6 @@
 import { Lock } from '@phosphor-icons/react';
 import { Button } from '@donotstay/ui';
+import { WEB_URL } from '../../utils/constants';
 
 interface BlurOverlayProps {
   hiddenCount: number;
@@ -10,7 +11,7 @@ function BlurOverlay({ hiddenCount, itemType }: BlurOverlayProps) {
   if (hiddenCount <= 0) return null;
 
   const handleUpgrade = () => {
-    window.open('http://localhost:3000/upgrade', '_blank');
+    window.open(`${WEB_URL}/upgrade`, '_blank');
   };
 
   return (

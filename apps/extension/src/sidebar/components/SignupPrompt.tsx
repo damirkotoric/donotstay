@@ -1,10 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Envelope, PaperPlaneTilt, CheckCircle, SpinnerGap, ArrowLeft, WarningCircle } from '@phosphor-icons/react';
 import { Button, Input } from '@donotstay/ui';
-
-// Use localhost for dev, production URL for prod builds
-declare const __DEV__: boolean;
-const API_URL = __DEV__ ? 'http://localhost:3000/api' : 'https://donotstay.app/api';
+import { API_URL } from '../../utils/constants';
 
 type Step = 'email' | 'code' | 'success';
 
@@ -254,7 +251,7 @@ function SignupPrompt({ onNeedsUpgrade }: SignupPromptProps) {
         <CheckCircle weight="fill" className="w-12 h-12 text-verdict-stay mb-4" />
         <div className="text-lg font-bold text-foreground mb-2">Welcome!</div>
         <div className="text-sm text-muted-foreground mb-6">
-          5 free checks have been added to your account.
+          10 free checks have been added to your account.
         </div>
         <SpinnerGap className="w-6 h-6 text-primary animate-spin" />
         <div className="text-xs text-muted-foreground mt-2">Analyzing hotel...</div>
@@ -332,7 +329,7 @@ function SignupPrompt({ onNeedsUpgrade }: SignupPromptProps) {
       <Envelope weight="bold" className="w-12 h-12 text-foreground mb-4" />
       <div className="text-lg font-bold text-foreground mb-2">Continue with email</div>
       <div className="text-base text-muted-foreground mb-6">
-        New users get 5 free checks.
+        New users get 10 free checks.
         <br />
         No password needed — we'll email you a code.
       </div>

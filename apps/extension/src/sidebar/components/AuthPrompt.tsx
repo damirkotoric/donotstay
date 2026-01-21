@@ -1,9 +1,10 @@
 import { User } from '@phosphor-icons/react';
 import { Button } from '@donotstay/ui';
+import { WEB_URL } from '../../utils/constants';
 
 function AuthPrompt() {
   const handleSignIn = () => {
-    window.open('http://localhost:3000/auth/login', '_blank');
+    window.open(`${WEB_URL}/auth/login`, '_blank');
   };
 
   return (

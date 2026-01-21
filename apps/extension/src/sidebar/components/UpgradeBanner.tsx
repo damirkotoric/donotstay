@@ -1,8 +1,9 @@
 import { Button } from '@donotstay/ui';
+import { WEB_URL } from '../../utils/constants';
 
 function UpgradeBanner() {
   const handleUpgrade = () => {
-    window.open('http://localhost:3000/upgrade', '_blank');
+    window.open(`${WEB_URL}/upgrade`, '_blank');
   };
 
   return (

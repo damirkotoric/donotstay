@@ -8,8 +8,7 @@ import type {
   CheckoutResponse
 } from '@donotstay/shared';
 import { getStoredToken } from './auth';
-
-const API_URL = 'http://localhost:3000/api';
+import { API_URL } from './constants';
 
 async function fetchWithAuth<T>(
   endpoint: string,

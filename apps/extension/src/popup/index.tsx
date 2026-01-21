@@ -3,9 +3,7 @@ import { createRoot } from 'react-dom/client';
 import '../globals.css';
 import './styles.css';
 import type { UserInfo } from '@donotstay/shared';
-
-declare const __DEV__: boolean;
-const WEB_URL = __DEV__ ? 'http://localhost:3000' : 'https://donotstay.app';
+import { WEB_URL } from '../utils/constants';
 
 interface AnonymousInfo {
   deviceId: string;
@@ -142,7 +140,7 @@ function Popup() {
                     </span>
                   </div>
                 )}
-                <p>Sign up free to get 5 more checks</p>
+                <p>Sign up free to get 10 more checks</p>
                 <button className="btn btn-secondary" onClick={handleSignIn}>
                   Sign Up Free
                 </button>

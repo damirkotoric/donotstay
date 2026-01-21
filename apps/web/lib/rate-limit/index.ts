@@ -86,7 +86,7 @@ async function checkAuthenticatedCredits(userId: string): Promise<RateLimitResul
 }
 
 /**
- * Check rate limit for anonymous users (limit of 3 checks)
+ * Check rate limit for anonymous users (limit of 5 checks)
  */
 async function checkAnonymousLimit(deviceId: string): Promise<RateLimitResult> {
   const client = supabaseAdmin();

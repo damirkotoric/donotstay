@@ -1,9 +1,6 @@
 import type { AnalyzeRequest, AnalyzeResponse, ApiError, HotelInfo, ScrapedReview, VerdictResult, CreditPackType, CreditPurchaseResponse } from '@donotstay/shared';
 import { ANONYMOUS_TIER_LIMIT } from '@donotstay/shared';
-
-// Use localhost for dev, production URL for prod builds
-declare const __DEV__: boolean;
-const API_URL = __DEV__ ? 'http://localhost:3000/api' : 'https://donotstay.app/api';
+import { API_URL } from '../utils/constants';
 
 interface AnalyzeMessage {
   type: 'ANALYZE';
