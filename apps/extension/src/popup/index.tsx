@@ -82,6 +82,27 @@ function Popup() {
     });
   }, []);
 
+  // Listen for credit changes in storage (reactive updates)
+  useEffect(() => {
+    const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }) => {
+      if (changes.cachedCredits?.newValue !== undefined) {
+        const newCredits = changes.cachedCredits.newValue;
+        setAuthStatus((prev) => {
+          if (!prev) return prev;
+          if (prev.authenticated && prev.user) {
+            return { ...prev, user: { ...prev.user, credits_remaining: newCredits } };
+          } else if (prev.anonymous) {
+            return { ...prev, anonymous: { ...prev.anonymous, checksRemaining: newCredits } };
+          }
+          return prev;
+        });
+      }
+    };
+
+    chrome.storage.onChanged.addListener(handleStorageChange);
+    return () => chrome.storage.onChanged.removeListener(handleStorageChange);
+  }, []);
+
   const handleSignIn = () => {
     chrome.tabs.create({ url: `${WEB_URL}/auth/login` });
   };
@@ -127,7 +148,7 @@ function Popup() {
           <>
             {authStatus.authenticated ? (
               <div className="flex flex-col items-center gap-3">
-                <div>
+                <div className="text-center">
                   <div className="text-sm text-muted-foreground">{authStatus.user?.email}</div>
                   <div className="text-sm font-semibold text-foreground">{creditsRemaining} checks remaining</div>
                 </div>

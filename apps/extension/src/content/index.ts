@@ -346,6 +346,19 @@ chrome.runtime.onMessage.addListener((message) => {
   }
 });
 
+// Listen for credit changes in storage (reactive updates)
+chrome.storage.onChanged.addListener((changes) => {
+  if (changes.cachedCredits?.newValue !== undefined) {
+    const newCredits = changes.cachedCredits.newValue;
+    console.log('DoNotStay: Credits updated to', newCredits);
+    _currentCreditsRemaining = newCredits;
+    // Update button if in idle state (not analyzing or showing verdict)
+    if (!isAnalyzing && !currentVerdict) {
+      updateButton({ state: 'idle', credits_remaining: newCredits });
+    }
+  }
+});
+
 // Start when DOM is ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);

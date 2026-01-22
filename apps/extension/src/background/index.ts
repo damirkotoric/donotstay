@@ -391,6 +391,8 @@ async function getAuthStatus() {
       checksRemaining = Math.max(0, ANONYMOUS_TIER_LIMIT - checksUsed);
     }
 
+    // Cache credits in storage for reactive updates
+    chrome.storage.local.set({ cachedCredits: checksRemaining });
     return {
       authenticated: false,
       user: null,
@@ -424,6 +426,8 @@ async function getAuthStatus() {
     }
 
     const user = await response.json();
+    // Cache credits in storage for reactive updates
+    chrome.storage.local.set({ cachedCredits: user.credits_remaining });
     return { authenticated: true, user, anonymous: null };
   } catch {
     const localChecksUsed = await getAnonymousChecksUsed();
