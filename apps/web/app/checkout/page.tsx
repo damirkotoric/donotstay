@@ -124,6 +124,12 @@ function CheckoutContent() {
         user: data.user,
       }));
 
+      // Notify extension about the auth token
+      window.postMessage({
+        type: 'DONOTSTAY_AUTH',
+        access_token: data.access_token,
+      }, window.location.origin);
+
       setAccessToken(data.access_token);
       setStep('checkout');
     } catch (err) {
@@ -235,19 +241,20 @@ function CheckoutContent() {
 
         {step === 'code' && (
           <>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setStep('email');
-                setCode('');
-                setErrorMessage('');
-              }}
-              className="mb-4 -ml-2"
-            >
-              <ArrowLeft weight="bold" className="w-4 h-4 mr-1" />
-              Back
-            </Button>
+            <div className="flex justify-center mb-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setStep('email');
+                  setCode('');
+                  setErrorMessage('');
+                }}
+              >
+                <ArrowLeft weight="bold" className="w-4 h-4 mr-1" />
+                Back
+              </Button>
+            </div>
 
             <div className="text-center mb-6">
               <Envelope weight="bold" className="w-10 h-10 text-primary mx-auto mb-3" />

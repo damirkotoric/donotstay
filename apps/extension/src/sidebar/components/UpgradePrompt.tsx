@@ -4,6 +4,14 @@ import { Button, CreditPackOption } from '@donotstay/ui';
 import { CREDIT_PACKS } from '@donotstay/shared';
 import type { RateLimitInfo, CreditPackType } from '@donotstay/shared';
 
+// Safe wrapper for chrome.runtime.sendMessage (handles dev mode)
+function sendMessage<T>(message: unknown): Promise<T | null> {
+  if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+    return chrome.runtime.sendMessage(message);
+  }
+  return Promise.resolve(null);
+}
+
 interface UpgradePromptProps {
   rateLimit?: RateLimitInfo;
   onCreditsUpdated?: () => void;
@@ -24,8 +32,8 @@ function UpgradePrompt({ rateLimit: _rateLimit, onCreditsUpdated }: UpgradePromp
   useEffect(() => {
     const checkCreditsOnMount = async () => {
       try {
-        const response = await chrome.runtime.sendMessage({ type: 'GET_AUTH_STATUS' });
-        if (response?.user?.credits_remaining > 0) {
+        const response = await sendMessage<{ user?: { credits_remaining?: number } }>({ type: 'GET_AUTH_STATUS' });
+        if (response?.user?.credits_remaining && response.user.credits_remaining > 0) {
           // Credits have been added! Trigger refresh
           onCreditsUpdated?.();
         }
@@ -43,7 +51,7 @@ function UpgradePrompt({ rateLimit: _rateLimit, onCreditsUpdated }: UpgradePromp
 
     const checkCredits = async (): Promise<boolean> => {
       try {
-        const response = await chrome.runtime.sendMessage({ type: 'GET_AUTH_STATUS' });
+        const response = await sendMessage<{ user?: { credits_remaining?: number } }>({ type: 'GET_AUTH_STATUS' });
         if (response?.user?.credits_remaining !== undefined) {
           // Check if credits increased OR if we now have credits when we had none
           if ((initialCredits !== null && response.user.credits_remaining > initialCredits) ||
@@ -87,8 +95,8 @@ function UpgradePrompt({ rateLimit: _rateLimit, onCreditsUpdated }: UpgradePromp
   const handleManualCheck = async () => {
     setIsCheckingCredits(true);
     try {
-      const response = await chrome.runtime.sendMessage({ type: 'GET_AUTH_STATUS' });
-      if (response?.user?.credits_remaining > 0) {
+      const response = await sendMessage<{ user?: { credits_remaining?: number } }>({ type: 'GET_AUTH_STATUS' });
+      if (response?.user?.credits_remaining && response.user.credits_remaining > 0) {
         setNewCreditBalance(response.user.credits_remaining);
         setCheckoutState('success');
         onCreditsUpdated?.();
@@ -112,12 +120,12 @@ function UpgradePrompt({ rateLimit: _rateLimit, onCreditsUpdated }: UpgradePromp
 
     try {
       // Get current credits before checkout
-      const authResponse = await chrome.runtime.sendMessage({ type: 'GET_AUTH_STATUS' });
+      const authResponse = await sendMessage<{ user?: { credits_remaining?: number } }>({ type: 'GET_AUTH_STATUS' });
       if (authResponse?.user?.credits_remaining !== undefined) {
         setInitialCredits(authResponse.user.credits_remaining);
       }
 
-      const response = await chrome.runtime.sendMessage({
+      const response = await sendMessage<{ error?: string; checkout_url?: string }>({
         type: 'CREATE_CHECKOUT',
         pack_type: selectedPack,
       });

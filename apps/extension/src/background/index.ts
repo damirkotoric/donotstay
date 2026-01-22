@@ -31,11 +31,15 @@ interface CreateCheckoutMessage {
   pack_type: CreditPackType;
 }
 
+interface SyncAuthFromWebMessage {
+  type: 'SYNC_AUTH_FROM_WEB';
+}
+
 interface Message {
   type: string;
 }
 
-type ExtensionMessage = AnalyzeMessage | GetAuthMessage | CheckCacheMessage | GetAnonymousChecksMessage | StoreAuthTokenMessage | CreateCheckoutMessage | Message;
+type ExtensionMessage = AnalyzeMessage | GetAuthMessage | CheckCacheMessage | GetAnonymousChecksMessage | StoreAuthTokenMessage | CreateCheckoutMessage | SyncAuthFromWebMessage | Message;
 
 interface CheckCacheResponse {
   cached: boolean;
@@ -83,7 +87,10 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
 
   if (message.type === 'STORE_AUTH_TOKEN') {
     const authMessage = message as StoreAuthTokenMessage;
-    chrome.storage.local.set({ authToken: authMessage.token }, () => {
+    chrome.storage.local.set({
+      authToken: authMessage.token,
+      donotstay_has_account: true  // Flag to remember user has logged in before
+    }, () => {
       console.log('DoNotStay: Auth token stored');
       sendResponse({ success: true });
     });
@@ -96,6 +103,15 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
       .then(sendResponse)
       .catch((error: Error) => {
         sendResponse({ error: error.message });
+      });
+    return true;
+  }
+
+  if (message.type === 'SYNC_AUTH_FROM_WEB') {
+    syncAuthFromWeb()
+      .then(sendResponse)
+      .catch((error: Error) => {
+        sendResponse({ synced: false, error: error.message });
       });
     return true;
   }
@@ -219,6 +235,52 @@ async function getStoredToken(): Promise<string | null> {
 }
 
 /**
+ * Sync auth from web session cookie
+ * This checks if user is logged in on the web and syncs their auth to the extension
+ */
+async function syncAuthFromWeb(): Promise<{ synced: boolean; error?: string }> {
+  try {
+    // Check if already authenticated
+    const existingToken = await getStoredToken();
+    if (existingToken) {
+      console.log('DoNotStay: Already authenticated, skipping web sync');
+      return { synced: false };
+    }
+
+    // Call the session API with credentials to send cookies
+    const response = await fetch(`${API_URL}/auth/session`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      return { synced: false, error: 'Failed to check session' };
+    }
+
+    const data = await response.json();
+
+    if (data.authenticated && data.access_token) {
+      // Store the token
+      await new Promise<void>((resolve) => {
+        chrome.storage.local.set({
+          authToken: data.access_token,
+          donotstay_has_account: true,
+        }, () => {
+          console.log('DoNotStay: Auth synced from web session');
+          resolve();
+        });
+      });
+      return { synced: true };
+    }
+
+    return { synced: false };
+  } catch (error) {
+    console.error('DoNotStay: Error syncing auth from web:', error);
+    return { synced: false, error: 'Network error' };
+  }
+}
+
+/**
  * Create Stripe checkout session and open in new tab
  */
 async function handleCreateCheckout(packType: CreditPackType): Promise<{ checkout_url?: string; error?: string }> {
@@ -262,16 +324,42 @@ async function handleCreateCheckout(packType: CreditPackType): Promise<{ checkou
 async function getAuthStatus() {
   const token = await getStoredToken();
   const anonymousId = await getAnonymousId();
-  const anonymousChecksUsed = await getAnonymousChecksUsed();
 
   if (!token) {
+    // Fetch actual check count from server (source of truth)
+    let checksUsed = 0;
+    let checksRemaining = ANONYMOUS_TIER_LIMIT;
+
+    try {
+      const response = await fetch(`${API_URL}/anonymous-status`, {
+        method: 'GET',
+        headers: {
+          'X-Device-ID': anonymousId,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        checksUsed = data.checks_used;
+        checksRemaining = data.checks_remaining;
+        // Sync local storage with server
+        await new Promise<void>((resolve) => {
+          chrome.storage.local.set({ anonymousChecksUsed: checksUsed }, () => resolve());
+        });
+      }
+    } catch (error) {
+      // Fall back to local storage if server unavailable
+      checksUsed = await getAnonymousChecksUsed();
+      checksRemaining = Math.max(0, ANONYMOUS_TIER_LIMIT - checksUsed);
+    }
+
     return {
       authenticated: false,
       user: null,
       anonymous: {
         deviceId: anonymousId,
-        checksUsed: anonymousChecksUsed,
-        checksRemaining: Math.max(0, ANONYMOUS_TIER_LIMIT - anonymousChecksUsed),
+        checksUsed,
+        checksRemaining,
       },
     };
   }
@@ -285,13 +373,14 @@ async function getAuthStatus() {
 
     if (!response.ok) {
       await chrome.storage.local.remove(['authToken']);
+      const localChecksUsed = await getAnonymousChecksUsed();
       return {
         authenticated: false,
         user: null,
         anonymous: {
           deviceId: anonymousId,
-          checksUsed: anonymousChecksUsed,
-          checksRemaining: Math.max(0, ANONYMOUS_TIER_LIMIT - anonymousChecksUsed),
+          checksUsed: localChecksUsed,
+          checksRemaining: Math.max(0, ANONYMOUS_TIER_LIMIT - localChecksUsed),
         },
       };
     }
@@ -299,13 +388,14 @@ async function getAuthStatus() {
     const user = await response.json();
     return { authenticated: true, user, anonymous: null };
   } catch {
+    const localChecksUsed = await getAnonymousChecksUsed();
     return {
       authenticated: false,
       user: null,
       anonymous: {
         deviceId: anonymousId,
-        checksUsed: anonymousChecksUsed,
-        checksRemaining: Math.max(0, ANONYMOUS_TIER_LIMIT - anonymousChecksUsed),
+        checksUsed: localChecksUsed,
+        checksRemaining: Math.max(0, ANONYMOUS_TIER_LIMIT - localChecksUsed),
       },
     };
   }

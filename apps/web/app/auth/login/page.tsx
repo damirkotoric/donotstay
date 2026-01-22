@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { PaperPlaneTilt, Envelope, Check, CaretLeft, SpinnerGap } from '@phosphor-icons/react';
 
 type Step = 'email' | 'code' | 'success';
 
@@ -203,9 +204,7 @@ export default function LoginPage() {
           {step === 'success' && (
             <div className="text-center">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+                <Check className="w-8 h-8 text-green-600" weight="bold" />
               </div>
               <h1 className="text-xl font-bold text-stone-900 mb-2">You're signed in!</h1>
               <p className="text-stone-600 mb-6">
@@ -228,16 +227,12 @@ export default function LoginPage() {
                 }}
                 className="flex items-center gap-1 text-sm text-stone-600 hover:text-stone-900 mb-6"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
+                <CaretLeft className="w-4 h-4" weight="bold" />
                 Back
               </button>
 
               <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-stone-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
+                <Envelope className="w-8 h-8 text-stone-600" />
               </div>
               <h1 className="text-xl font-bold text-stone-900 mb-2">Enter your code</h1>
               <p className="text-stone-600 mb-6">
@@ -268,10 +263,7 @@ export default function LoginPage() {
 
               {status === 'loading' && (
                 <div className="flex justify-center mb-4">
-                  <svg className="animate-spin h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
+                  <SpinnerGap className="animate-spin h-6 w-6 text-red-600" weight="bold" />
                 </div>
               )}
 
@@ -289,13 +281,10 @@ export default function LoginPage() {
           {step === 'email' && (
             <div className="text-center">
               <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-stone-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
+                <Envelope className="w-8 h-8 text-stone-600" />
               </div>
-              <h1 className="text-xl font-bold text-stone-900 mb-2">Sign in with email</h1>
+              <h1 className="text-xl font-bold text-stone-900 mb-2">Continue with email</h1>
               <p className="text-stone-600 mb-6">
-                New users get 10 free checks.<br />
                 No password needed — we'll email you a code.
               </p>
 
@@ -319,15 +308,10 @@ export default function LoginPage() {
                   className="w-full h-12 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {status === 'loading' ? (
-                    <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
+                    <SpinnerGap className="animate-spin h-5 w-5" weight="bold" />
                   ) : (
                     <>
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                      </svg>
+                      <PaperPlaneTilt className="w-5 h-5" weight="bold" />
                       Send Code
                     </>
                   )}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowSquareOutIcon } from '@phosphor-icons/react';
+import { ArrowSquareOut } from '@phosphor-icons/react';
 import type { AnalyzeResponse, RateLimitInfo } from '@donotstay/shared';
 import VerdictCard from './components/VerdictCard';
 import CollapsibleText from './components/CollapsibleText';
@@ -114,7 +114,7 @@ function App() {
           className="inline-flex items-center gap-1 underline hover:text-foreground transition-colors"
         >
           donotstay.app
-          <ArrowSquareOutIcon size={12} weight="bold" />
+          <ArrowSquareOut size={12} weight="bold" />
         </a>
       </footer>
     </div>

@@ -4,8 +4,8 @@ import type {
   ApiError,
   UserInfo,
   FeedbackRequest,
-  CheckoutRequest,
-  CheckoutResponse
+  CreditPurchaseRequest,
+  CreditPurchaseResponse
 } from '@donotstay/shared';
 import { getStoredToken } from './auth';
 import { API_URL } from './constants';
@@ -60,8 +60,8 @@ export async function submitFeedback(request: FeedbackRequest): Promise<{ succes
   });
 }
 
-export async function createCheckout(request: CheckoutRequest): Promise<CheckoutResponse | ApiError> {
-  return fetchWithAuth<CheckoutResponse>('/stripe/create-checkout', {
+export async function createCheckout(request: CreditPurchaseRequest): Promise<CreditPurchaseResponse | ApiError> {
+  return fetchWithAuth<CreditPurchaseResponse>('/stripe/create-checkout', {
     method: 'POST',
     body: JSON.stringify(request),
   });

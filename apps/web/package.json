@@ -1,6 +1,6 @@
 {
   "name": "web",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "concurrently -n next,stripe -c blue,magenta \"dotenv -e ../../.env.local -- next dev\" \"stripe listen --forward-to localhost:3000/api/stripe/webhook\"",

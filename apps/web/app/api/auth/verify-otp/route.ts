@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     // Note: Returning users keep their existing credits - no bonus for signing in again
 
     // Return session token for the extension to store
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         success: true,
         access_token: data.session.access_token,
@@ -90,6 +90,18 @@ export async function POST(request: NextRequest) {
       },
       { headers: corsHeaders }
     );
+
+    // Set session cookie for extension auth sync
+    // This allows the extension to check if user is logged in via API
+    response.cookies.set('donotstay_session', data.session.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+      path: '/',
+    });
+
+    return response;
   } catch (error) {
     console.error('Error verifying OTP:', error);
     return NextResponse.json<ApiError>(

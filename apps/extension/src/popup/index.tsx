@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { ArrowSquareOut } from '@phosphor-icons/react';
 import '../globals.css';
-import './styles.css';
 import type { UserInfo } from '@donotstay/shared';
 import { CREDIT_PACKS } from '@donotstay/shared';
 import type { CreditPackType } from '@donotstay/shared';
-import { CreditPackOption } from '@donotstay/ui';
+import { Button, CreditPackOption } from '@donotstay/ui';
 import { WEB_URL } from '../utils/constants';
 
 interface AnonymousInfo {
@@ -39,17 +39,10 @@ function LogoFull({ height = 28 }: { height?: number }) {
   );
 }
 
-function ArrowSquareOut() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 256 256" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-      <path d="M224,104a8,8,0,0,1-16,0V59.32l-66.33,66.34a8,8,0,0,1-11.32-11.32L196.68,48H152a8,8,0,0,1,0-16h64a8,8,0,0,1,8,8Zm-40,24a8,8,0,0,0-8,8v72H48V80h72a8,8,0,0,0,0-16H48A16,16,0,0,0,32,80V208a16,16,0,0,0,16,16H176a16,16,0,0,0,16-16V136A8,8,0,0,0,184,128Z"/>
-    </svg>
-  );
-}
 
 function PacksList({ onBuyPack }: { onBuyPack: (pack: CreditPackType) => void }) {
   return (
-    <div className="packs-list">
+    <div className="flex flex-col gap-2">
       <CreditPackOption
         credits={CREDIT_PACKS.entry.credits}
         price={CREDIT_PACKS.entry.priceDisplay}
@@ -72,10 +65,20 @@ function PacksList({ onBuyPack }: { onBuyPack: (pack: CreditPackType) => void })
 
 function Popup() {
   const [authStatus, setAuthStatus] = useState<AuthStatus | null>(null);
+  const [hasAccount, setHasAccount] = useState<boolean>(false);
 
   useEffect(() => {
-    chrome.runtime.sendMessage({ type: 'GET_AUTH_STATUS' }, (response) => {
-      setAuthStatus(response);
+    // Check if user has previously logged in
+    chrome.storage.local.get(['donotstay_has_account'], (result) => {
+      setHasAccount(!!result.donotstay_has_account);
+    });
+
+    // Try to sync auth from web session cookie first (for reinstalls)
+    // Then get auth status (which will reflect any synced auth)
+    chrome.runtime.sendMessage({ type: 'SYNC_AUTH_FROM_WEB' }, () => {
+      chrome.runtime.sendMessage({ type: 'GET_AUTH_STATUS' }, (response) => {
+        setAuthStatus(response);
+      });
     });
   }, []);
 
@@ -90,12 +93,12 @@ function Popup() {
 
   if (authStatus === null) {
     return (
-      <div className="popup">
-        <div className="header">
+      <div className="flex flex-col min-h-[280px] w-[320px] bg-background">
+        <div className="flex justify-center pt-6 pb-4 px-5">
           <LogoFull />
         </div>
-        <div className="loading">
-          <div className="spinner" />
+        <div className="flex flex-col items-center justify-center h-[200px] gap-4">
+          <div className="w-8 h-8 border-3 border-border border-t-primary rounded-full animate-spin" />
         </div>
       </div>
     );
@@ -105,57 +108,86 @@ function Popup() {
   const hasZeroCredits = authStatus.authenticated && creditsRemaining === 0;
 
   return (
-    <div className="popup">
-      <div className="header">
+    <div className="flex flex-col min-h-[280px] w-[320px] bg-background">
+      <div className="flex justify-center pt-6 pb-6 px-5">
         <LogoFull />
       </div>
 
-      <div className="content">
+      <div className="flex-1 px-5 pb-6 flex flex-col gap-4">
         {hasZeroCredits ? (
-          <div className="user-section">
-            <div className="user-email">{authStatus.user?.email}</div>
-            <div className="credits-count credits-zero">0 checks remaining</div>
-            <div className="packs-section">
-              <div className="packs-label">Buy checks to continue:</div>
+          <div className="flex flex-col items-center gap-3">
+            <div className="text-sm text-muted-foreground">{authStatus.user?.email}</div>
+            <div className="text-sm font-semibold text-destructive">0 checks remaining</div>
+            <div className="w-full mt-1">
+              <div className="text-xs text-muted-foreground text-center mb-2">Buy checks to continue:</div>
               <PacksList onBuyPack={handleBuyPack} />
             </div>
           </div>
         ) : (
           <>
-            <p className="info-text">
-              Visit a hotel page on Booking.com to run checks.
-            </p>
-            <div className="divider" />
             {authStatus.authenticated ? (
-              <div className="user-section">
-                <div className="user-email">{authStatus.user?.email}</div>
-                <div className="credits-count">{creditsRemaining} checks remaining</div>
-                <div className="packs-section">
-                  <div className="packs-label">Buy more checks:</div>
+              <div className="flex flex-col items-center gap-3">
+                <div>
+                  <div className="text-sm text-muted-foreground">{authStatus.user?.email}</div>
+                  <div className="text-sm font-semibold text-foreground">{creditsRemaining} checks remaining</div>
+                </div>
+                <div className="w-full mt-1">
+                  <div className="text-xs text-muted-foreground text-center mb-2">Buy more checks:</div>
                   <PacksList onBuyPack={handleBuyPack} />
                 </div>
               </div>
             ) : (
-              <div className="anon-section">
+              <div className="flex flex-col items-center gap-3 text-center">
                 {authStatus.anonymous && (
-                  <div className="anon-remaining">
+                  <div className="text-base font-semibold text-foreground">
                     {authStatus.anonymous.checksRemaining} free {authStatus.anonymous.checksRemaining === 1 ? 'check' : 'checks'} remaining
                   </div>
                 )}
-                <p className="anon-cta">Sign up free to get 10 more checks</p>
-                <button className="signup-btn" onClick={handleSignIn}>
-                  Sign Up Free
-                </button>
+                {hasAccount ? (
+                  <>
+                    <p className="text-sm font-medium text-foreground">Welcome back</p>
+                    <Button variant="secondary" className="w-full" onClick={handleSignIn}>
+                      Log in
+                    </Button>
+                    <button
+                      onClick={handleSignIn}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      New user? Sign up free
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className="-mt-2 mb-2 text-sm text-muted-foreground">Get 10 more by creating an account</p>
+                    <Button variant="secondary" className="w-full" onClick={handleSignIn}>
+                      Sign Up Free
+                    </Button>
+                    <span className="text-sm text-muted-foreground opacity-70">
+                      or
+                    </span>
+                    <button
+                      onClick={handleSignIn}
+                      className="text-base text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Already have an account? <span className="underline">Log in</span>
+                    </button>
+                  </>
+                )}
               </div>
             )}
           </>
         )}
       </div>
 
-      <div className="footer">
-        <a href="https://donotstay.app" target="_blank" rel="noopener noreferrer">
+      <div className="flex justify-center py-4 px-5 border-t border-border">
+        <a
+          href="https://donotstay.app"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors font-medium"
+        >
           donotstay.app
-          <ArrowSquareOut />
+          <ArrowSquareOut size={14} weight="bold" />
         </a>
       </div>
     </div>

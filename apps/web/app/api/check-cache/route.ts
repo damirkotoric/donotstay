@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { getUserVerdict, getAnonymousVerdict } from '@/lib/cache/user-verdicts';
-import type { VerdictResult } from '@donotstay/shared';
+import { hasUserPurchased } from '@/lib/rate-limit';
+import { blurResults } from '@/lib/blur';
+import type { VerdictResult, AnalyzeResponse } from '@donotstay/shared';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,7 +13,11 @@ const corsHeaders = {
 
 interface CheckCacheResponse {
   cached: boolean;
-  verdict_data?: VerdictResult;
+  verdict_data?: VerdictResult & {
+    is_blurred?: boolean;
+    red_flags_visible_count?: number;
+    avoid_if_visible_count?: number;
+  };
   analyzed_at?: string;
 }
 
@@ -57,18 +63,30 @@ export async function GET(request: NextRequest) {
     }
 
     if (cached && cached.verdict) {
-      const verdictData: VerdictResult = {
+      // Check if user has purchased (determines if results should be blurred)
+      const isPaidUser = await hasUserPurchased(userId);
+
+      // Build the base response
+      let verdictResponse: AnalyzeResponse = {
+        hotel_id: hotelId,
         verdict: cached.verdict,
         confidence: cached.confidence,
         one_liner: cached.one_liner,
         red_flags: cached.red_flags,
         avoid_if_you_are: cached.avoid_if_you_are,
         bottom_line: cached.bottom_line,
+        review_count_analyzed: 0,
         cached: true,
       };
+
+      // Apply blurring for free users (users who haven't purchased)
+      if (!isPaidUser) {
+        verdictResponse = blurResults(verdictResponse);
+      }
+
       const response: CheckCacheResponse = {
         cached: true,
-        verdict_data: verdictData,
+        verdict_data: verdictResponse,
         analyzed_at: cached.created_at,
       };
       return NextResponse.json(response, { headers: corsHeaders });

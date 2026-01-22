@@ -1,7 +1,30 @@
-import { Check } from '@phosphor-icons/react/dist/ssr';
+'use client';
+
+import { useEffect } from 'react';
+import { Check } from '@phosphor-icons/react';
 import { LogoFull, LogoFullDark } from '@/components/Logo';
 
 export default function CheckoutSuccess() {
+  // Sync auth token to extension on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('donotstay_auth');
+      if (stored) {
+        const { access_token } = JSON.parse(stored);
+        if (access_token) {
+          // Post message for extension's auth-listener to capture
+          window.postMessage({
+            type: 'DONOTSTAY_AUTH',
+            access_token,
+          }, window.location.origin);
+          console.log('DoNotStay: Auth token synced to extension from success page');
+        }
+      }
+    } catch {
+      // Ignore parsing errors
+    }
+  }, []);
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center bg-muted gap-6">
       <div className="mb-6 flex justify-center">
@@ -16,7 +39,10 @@ export default function CheckoutSuccess() {
           Payment Successful!
         </h1>
         <p className="text-muted-foreground mb-4">
-          Your credits have been added to your account. Close this tab and return to the extension.
+          Your credits have been added to your account.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Return to the Booking.com tab and refresh the page to see your full analysis.
         </p>
       </div>
     </div>

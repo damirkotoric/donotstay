@@ -4,6 +4,22 @@ import { injectButton, updateButton, type ButtonState } from './button';
 import { injectSidebar, showSidebar, hideSidebar, updateSidebar, setAuthSuccessCallback, setCreditsUpdatedCallback } from './sidebar';
 import type { AnalyzeResponse, ApiError, HotelInfo, ScrapedReview } from '@donotstay/shared';
 
+// Sync auth from web session via background script API call
+// This auto-authenticates users who are logged in on the web (reinstalls, etc.)
+async function syncAuthFromWeb(): Promise<void> {
+  try {
+    console.log('DoNotStay: Checking for web session...');
+    const response = await chrome.runtime.sendMessage({ type: 'SYNC_AUTH_FROM_WEB' });
+    if (response?.synced) {
+      console.log('DoNotStay: Auth synced from web session');
+    } else {
+      console.log('DoNotStay: No web session found');
+    }
+  } catch (error) {
+    console.log('DoNotStay: Auth sync error (non-blocking):', error);
+  }
+}
+
 // Inject styles dynamically
 function injectStyles() {
   if (document.getElementById('donotstay-styles')) return;
@@ -61,7 +77,7 @@ function injectStyles() {
 // State
 let isAnalyzing = false;
 let currentVerdict: AnalyzeResponse | null = null;
-let currentCreditsRemaining: number | undefined = undefined;
+let _currentCreditsRemaining: number | undefined = undefined;
 
 // Prefetch state - populated on page load
 let prefetchedData: {
@@ -197,6 +213,9 @@ async function init() {
   // Start prefetching data in background (non-blocking)
   prefetchPromise = prefetchData();
 
+  // Try to sync auth from web session (auto-authenticates returning users)
+  await syncAuthFromWeb();
+
   // Fetch credits and check cached verdict in parallel
   // Button stays in loading until we know what to show
   const [credits] = await Promise.all([
@@ -204,7 +223,7 @@ async function init() {
     checkCachedVerdict(),
   ]);
 
-  currentCreditsRemaining = credits;
+  _currentCreditsRemaining = credits;
 
   // Only show idle state if we don't already have a verdict from cache
   if (!currentVerdict) {
