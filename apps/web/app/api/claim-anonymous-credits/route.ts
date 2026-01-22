@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if this USER already claimed ANY device (prevents reinstall exploit)
+    // Check if this USER already claimed (one-time only, prevents reinstall exploit)
     const { data: userClaim } = await supabase
       .from('anonymous_claims')
       .select('id')
@@ -62,22 +62,6 @@ export async function POST(request: NextRequest) {
 
     if (userClaim) {
       // User already claimed - return success but don't add credits again
-      return NextResponse.json({
-        success: true,
-        already_claimed: true,
-        credits_added: 0,
-      }, { headers: corsHeaders });
-    }
-
-    // Also check if this specific device was already claimed by another user
-    const { data: deviceClaim } = await supabase
-      .from('anonymous_claims')
-      .select('id')
-      .eq('device_id', device_id)
-      .single();
-
-    if (deviceClaim) {
-      // Device already claimed - return success but don't add credits again
       return NextResponse.json({
         success: true,
         already_claimed: true,
