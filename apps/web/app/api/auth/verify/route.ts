@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import type { ApiError } from '@donotstay/shared';
+import { FREE_SIGNUP_CREDITS } from '@donotstay/shared';
 
 export async function GET(request: NextRequest) {
   try {
@@ -50,6 +51,7 @@ export async function GET(request: NextRequest) {
         id: user.id,
         email: user.email!,
         subscription_status: 'free',
+        credits_remaining: FREE_SIGNUP_CREDITS,
       });
     }
 

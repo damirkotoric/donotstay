@@ -90,8 +90,10 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
     chrome.storage.local.set({
       authToken: authMessage.token,
       donotstay_has_account: true  // Flag to remember user has logged in before
-    }, () => {
+    }, async () => {
       console.log('DoNotStay: Auth token stored');
+      // Claim anonymous credits for the new auth
+      await claimAnonymousCredits(authMessage.token);
       sendResponse({ success: true });
     });
     return true;
@@ -270,6 +272,8 @@ async function syncAuthFromWeb(): Promise<{ synced: boolean; error?: string }> {
           resolve();
         });
       });
+      // Claim anonymous credits for the synced auth
+      await claimAnonymousCredits(data.access_token);
       return { synced: true };
     }
 
@@ -277,6 +281,40 @@ async function syncAuthFromWeb(): Promise<{ synced: boolean; error?: string }> {
   } catch (error) {
     console.error('DoNotStay: Error syncing auth from web:', error);
     return { synced: false, error: 'Network error' };
+  }
+}
+
+/**
+ * Claim anonymous credits for a newly authenticated user
+ * This adds remaining anonymous checks to the user's account
+ */
+async function claimAnonymousCredits(authToken: string): Promise<void> {
+  try {
+    const anonymousId = await getAnonymousId();
+
+    console.log('DoNotStay: Claiming anonymous credits for device:', anonymousId);
+
+    const response = await fetch(`${API_URL}/claim-anonymous-credits`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({ device_id: anonymousId }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.credits_added > 0) {
+        console.log(`DoNotStay: Claimed ${data.credits_added} anonymous credits`);
+      } else if (data.already_claimed) {
+        console.log('DoNotStay: Anonymous credits already claimed');
+      }
+    } else {
+      console.log('DoNotStay: Failed to claim anonymous credits');
+    }
+  } catch (error) {
+    console.error('DoNotStay: Error claiming anonymous credits:', error);
   }
 }
 
