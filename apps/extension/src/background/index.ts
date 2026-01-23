@@ -87,15 +87,18 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
 
   if (message.type === 'STORE_AUTH_TOKEN') {
     const authMessage = message as StoreAuthTokenMessage;
-    chrome.storage.local.set({
-      authToken: authMessage.token,
-      donotstay_has_account: true  // Flag to remember user has logged in before
-    }, async () => {
+    (async () => {
+      await new Promise<void>((resolve) => {
+        chrome.storage.local.set({
+          authToken: authMessage.token,
+          donotstay_has_account: true  // Flag to remember user has logged in before
+        }, () => resolve());
+      });
       console.log('DoNotStay: Auth token stored');
       // Claim anonymous credits for the new auth
       await claimAnonymousCredits(authMessage.token);
       sendResponse({ success: true });
-    });
+    })();
     return true;
   }
 
