@@ -201,7 +201,7 @@ function CheckoutContent() {
           <>
             <div className="text-center mb-6">
               <Envelope weight="bold" className="w-10 h-10 text-primary mx-auto mb-3" />
-              <h2 className="text-lg font-semibold text-foreground">Sign in to continue</h2>
+              <h2 className="text-lg font-semibold text-foreground">Enter your email</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 We&apos;ll send you a code to verify your email.
               </p>

@@ -65,12 +65,20 @@ export async function POST(request: NextRequest) {
 
     if (isNewUser) {
       // Create new user with signup bonus credits
-      await supabase.from('users').insert({
+      const { error: insertError } = await supabase.from('users').insert({
         id: user.id,
         email: user.email!,
         subscription_status: 'free',
         credits_remaining: FREE_SIGNUP_CREDITS,
       });
+
+      if (insertError) {
+        console.error('Failed to create user record:', insertError);
+        return NextResponse.json<ApiError>(
+          { error: 'Failed to create account', code: 'USER_CREATE_ERROR' },
+          { status: 500, headers: corsHeaders }
+        );
+      }
       creditsRemaining = FREE_SIGNUP_CREDITS;
     }
     // Note: Returning users keep their existing credits - no bonus for signing in again
