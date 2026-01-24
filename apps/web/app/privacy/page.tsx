@@ -19,97 +19,173 @@ export default function PrivacyPage() {
       </p>
 
       <h2>2. Information We Collect</h2>
-      <h3>Information You Provide</h3>
+
+      <h3>Account Information</h3>
+      <p>When you create an account, we collect:</p>
       <ul>
-        <li>Account information (email address) when you sign up</li>
-        <li>Payment information processed securely through our payment provider</li>
-        <li>Communications you send to us (support requests, feedback)</li>
+        <li>Email address (used for authentication via one-time codes)</li>
       </ul>
 
-      <h3>Information Collected Automatically</h3>
+      <h3>Payment Information</h3>
+      <p>When you purchase credits, we collect:</p>
       <ul>
-        <li>Hotel page URLs you analyze using our extension</li>
-        <li>Usage data (features used, analysis requests made)</li>
-        <li>Device and browser information for compatibility purposes</li>
-        <li>IP address for security and fraud prevention</li>
+        <li>Stripe customer ID (to link your purchases)</li>
+        <li>Purchase history (credit pack type, amount, timestamp)</li>
       </ul>
+      <p>
+        Payment details (card numbers, billing address) are processed directly by Stripe
+        and are never stored on our servers.
+      </p>
+
+      <h3>Hotel Data (Collected by the Extension)</h3>
+      <p>When you analyze a hotel, we temporarily collect from the Booking.com page:</p>
+      <ul>
+        <li>Hotel name, location, rating, and URL</li>
+        <li>Guest reviews (reviewer name, country, rating, date, review text)</li>
+      </ul>
+      <p>
+        This data is sent to our servers for AI analysis. Individual review text is not
+        permanently stored—only the generated verdict is cached.
+      </p>
+
+      <h3>Usage Data</h3>
+      <ul>
+        <li>Hotel IDs you have analyzed (for rate limiting and caching)</li>
+        <li>Credit balance and usage</li>
+        <li>Timestamps of analyses</li>
+      </ul>
+
+      <h3>Anonymous Users</h3>
+      <p>
+        If you use the extension without an account, we generate a random device
+        identifier stored locally in your browser. This is used to provide limited free
+        analyses and is not linked to any personal information.
+      </p>
+
+      <h3>Feedback</h3>
+      <p>
+        If you submit feedback on a verdict, we store the feedback type and any details
+        you provide to improve our service.
+      </p>
 
       <h2>3. How We Use Your Information</h2>
       <p>We use the collected information to:</p>
       <ul>
-        <li>Provide and maintain the Service</li>
-        <li>Process your transactions and manage your subscription</li>
-        <li>Analyze hotel reviews and generate AI verdicts</li>
-        <li>Improve and optimize the Service</li>
-        <li>Communicate with you about updates, support, and promotional offers</li>
-        <li>Detect and prevent fraud or abuse</li>
+        <li>Analyze hotel reviews and generate AI-powered verdicts</li>
+        <li>Cache verdicts to improve performance (7-day retention)</li>
+        <li>Process credit purchases and track your balance</li>
+        <li>Prevent abuse through rate limiting</li>
+        <li>Improve the accuracy of our AI analysis based on feedback</li>
+        <li>Communicate with you about your account or support requests</li>
       </ul>
 
       <h2>4. Data Sharing and Disclosure</h2>
-      <p>We may share your information with:</p>
+      <p>We share data with the following service providers:</p>
       <ul>
         <li>
-          <strong>Service Providers:</strong> Third-party services that help us operate
-          (payment processors, hosting providers, analytics services)
+          <strong>Anthropic (Claude AI):</strong> Hotel and review data is sent to
+          Anthropic&apos;s API for AI analysis. This data is not linked to your personal
+          identity.
         </li>
         <li>
-          <strong>AI Processing:</strong> Hotel review data may be sent to AI service
-          providers for analysis, but this data is not linked to your personal identity
+          <strong>Stripe:</strong> Processes payments securely. We only store your Stripe
+          customer ID.
         </li>
         <li>
-          <strong>Legal Requirements:</strong> When required by law or to protect our
-          rights
+          <strong>Supabase:</strong> Hosts our database and authentication services.
+        </li>
+        <li>
+          <strong>Vercel:</strong> Hosts our website and API.
         </li>
       </ul>
-      <p>We do not sell your personal information to third parties.</p>
+      <p>
+        We do not sell your personal information to third parties. We do not use
+        third-party analytics or advertising services.
+      </p>
 
       <h2>5. Data Retention</h2>
-      <p>
-        We retain your personal information for as long as your account is active or as
-        needed to provide you services. Analysis results may be cached temporarily to
-        improve performance. You may request deletion of your data at any time.
-      </p>
+      <ul>
+        <li>
+          <strong>Account data:</strong> Retained until you request deletion
+        </li>
+        <li>
+          <strong>Verdict cache:</strong> Automatically expires after 7 days
+        </li>
+        <li>
+          <strong>Analysis history:</strong> Retained for rate limiting purposes
+        </li>
+        <li>
+          <strong>Payment records:</strong> Retained as required for accounting and legal
+          purposes
+        </li>
+      </ul>
+      <p>You may request deletion of your data at any time by contacting us.</p>
 
       <h2>6. Data Security</h2>
       <p>
         We implement appropriate technical and organizational measures to protect your
-        personal information. However, no method of transmission over the Internet is
-        100% secure, and we cannot guarantee absolute security.
+        personal information, including:
+      </p>
+      <ul>
+        <li>HTTPS encryption for all data transmission</li>
+        <li>Secure authentication via one-time email codes</li>
+        <li>Row-level security policies on our database</li>
+      </ul>
+      <p>
+        However, no method of transmission over the Internet is 100% secure, and we
+        cannot guarantee absolute security.
       </p>
 
       <h2>7. Your Rights</h2>
-      <p>Depending on your location, you may have the right to:</p>
+      <p>You have the right to:</p>
       <ul>
         <li>Access the personal information we hold about you</li>
         <li>Request correction of inaccurate data</li>
-        <li>Request deletion of your data</li>
-        <li>Object to or restrict certain processing</li>
-        <li>Data portability</li>
-        <li>Withdraw consent where processing is based on consent</li>
+        <li>Request deletion of your account and associated data</li>
+        <li>Export your data</li>
       </ul>
+      <p>
+        To exercise these rights, contact us at{' '}
+        <a href="mailto:mail@donotstay.app" className="text-primary hover:underline">
+          mail@donotstay.app
+        </a>
+        .
+      </p>
 
       <h2>8. Browser Extension Permissions</h2>
-      <p>
-        Our browser extension requires certain permissions to function. We only access
-        data necessary to provide the Service:
-      </p>
+      <p>Our browser extension requires the following permissions:</p>
       <ul>
         <li>
-          <strong>Active Tab:</strong> To detect when you&apos;re viewing a supported hotel
-          booking page
+          <strong>Host access to booking.com:</strong> To read hotel information and
+          reviews on hotel pages you visit
         </li>
         <li>
-          <strong>Storage:</strong> To save your preferences and cached analyses locally
+          <strong>Host access to donotstay.app:</strong> To sync your login session
+          between the website and extension
+        </li>
+        <li>
+          <strong>Storage:</strong> To save your authentication token, cached credits,
+          and device identifier locally
+        </li>
+        <li>
+          <strong>Active Tab:</strong> To detect when you&apos;re viewing a supported hotel
+          page
         </li>
       </ul>
-      <p>We do not access your browsing history or data on unrelated websites.</p>
-
-      <h2>9. Cookies and Tracking</h2>
       <p>
-        We use essential cookies to maintain your session and preferences. We may use
-        analytics services to understand how users interact with our Service. You can
-        control cookie preferences through your browser settings.
+        We only access data on Booking.com hotel pages. We do not access your browsing
+        history or data on other websites.
       </p>
+
+      <h2>9. Cookies</h2>
+      <p>We use a single essential cookie:</p>
+      <ul>
+        <li>
+          <strong>donotstay_session:</strong> Stores your authentication session (30-day
+          expiry). This cookie is required for the extension to sync your login status.
+        </li>
+      </ul>
+      <p>We do not use analytics, advertising, or tracking cookies.</p>
 
       <h2>10. Children&apos;s Privacy</h2>
       <p>
@@ -120,9 +196,9 @@ export default function PrivacyPage() {
 
       <h2>11. International Data Transfers</h2>
       <p>
-        Your information may be transferred to and processed in countries other than
-        your own. We ensure appropriate safeguards are in place for such transfers in
-        accordance with applicable data protection laws.
+        Your information may be transferred to and processed in the United States and
+        other countries where our service providers operate. We ensure appropriate
+        safeguards are in place for such transfers.
       </p>
 
       <h2>12. Changes to This Policy</h2>

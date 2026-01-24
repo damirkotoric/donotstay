@@ -2,17 +2,33 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { resolve } from 'path';
-import { copyFileSync, mkdirSync, existsSync } from 'fs';
+import { copyFileSync, mkdirSync, existsSync, readFileSync, writeFileSync } from 'fs';
 
 // Copy manifest and icons after build
-function copyManifestPlugin(outDir: string) {
+function copyManifestPlugin(outDir: string, mode: string) {
   return {
     name: 'copy-manifest',
     writeBundle() {
-      // Copy manifest
-      copyFileSync(
-        resolve(__dirname, 'manifest.json'),
-        resolve(__dirname, `${outDir}/manifest.json`)
+      // Read and process manifest
+      const manifestPath = resolve(__dirname, 'manifest.json');
+      const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'));
+
+      // In production, remove localhost permissions
+      if (mode !== 'development') {
+        manifest.host_permissions = manifest.host_permissions.filter(
+          (p: string) => !p.includes('localhost')
+        );
+        manifest.content_scripts = manifest.content_scripts.map(
+          (script: { matches: string[] }) => ({
+            ...script,
+            matches: script.matches.filter((m: string) => !m.includes('localhost')),
+          })
+        );
+      }
+
+      writeFileSync(
+        resolve(__dirname, `${outDir}/manifest.json`),
+        JSON.stringify(manifest, null, 2)
       );
       // Copy icons
       const iconsDir = resolve(__dirname, `${outDir}/icons`);
@@ -35,7 +51,7 @@ export default defineConfig(({ mode }) => {
   const outDir = mode === 'development' ? 'dist-dev' : 'dist';
 
   return {
-    plugins: [react(), tailwindcss(), copyManifestPlugin(outDir)],
+    plugins: [react(), tailwindcss(), copyManifestPlugin(outDir, mode)],
     base: './',
     define: {
       __DEV__: mode === 'development',
