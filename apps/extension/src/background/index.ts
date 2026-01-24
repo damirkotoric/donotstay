@@ -453,4 +453,11 @@ chrome.action.onClicked.addListener((tab) => {
   }
 });
 
+// Open welcome page on first install
+chrome.runtime.onInstalled.addListener((details) => {
+  if (details.reason === 'install') {
+    chrome.tabs.create({ url: 'https://donotstay.app/welcome' });
+  }
+});
+
 console.log('DoNotStay background service worker initialized');

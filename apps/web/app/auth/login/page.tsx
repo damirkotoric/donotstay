@@ -12,7 +12,7 @@ export default function LoginPage() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [canResend, setCanResend] = useState(false);
-  const [resendCountdown, setResendCountdown] = useState(30);
+  const [resendCountdown, setResendCountdown] = useState(60);
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -20,7 +20,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (step !== 'code') return;
 
-    setResendCountdown(30);
+    setResendCountdown(60);
     setCanResend(false);
 
     const timer = setInterval(() => {
@@ -168,7 +168,7 @@ export default function LoginPage() {
 
       setStatus('idle');
       setCanResend(false);
-      setResendCountdown(30);
+      setResendCountdown(60);
       setCode(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
     } catch (err) {
