@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { SpinnerGap, Envelope, PaperPlaneTilt, ArrowLeft } from '@phosphor-icons/react';
 import { LogoFull, LogoFullDark } from '@/components/Logo';
@@ -17,7 +17,8 @@ function CheckoutContent() {
 
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
+  const [code, setCode] = useState(['', '', '', '', '', '']);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
@@ -88,20 +89,50 @@ function CheckoutContent() {
 
       setStatus('idle');
       setStep('code');
+      setTimeout(() => inputRefs.current[0]?.focus(), 100);
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : 'Something went wrong');
       setStatus('error');
     }
   };
 
-  const handleCodeSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!code || code.length !== 6) {
-      setErrorMessage('Please enter the 6-digit code');
-      setStatus('error');
-      return;
+  const handleCodeChange = (index: number, value: string) => {
+    const digit = value.replace(/\D/g, '').slice(-1);
+    const newCode = [...code];
+    newCode[index] = digit;
+    setCode(newCode);
+    setErrorMessage('');
+
+    if (digit && index < 5) {
+      inputRefs.current[index + 1]?.focus();
     }
 
+    // Auto-submit when all 6 digits entered
+    if (digit && index === 5) {
+      const fullCode = newCode.join('');
+      if (fullCode.length === 6) {
+        verifyCode(fullCode);
+      }
+    }
+  };
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !code[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (pasted.length === 6) {
+      const newCode = pasted.split('');
+      setCode(newCode);
+      verifyCode(pasted);
+    }
+  };
+
+  const verifyCode = async (codeString: string) => {
     setStatus('loading');
     setErrorMessage('');
 
@@ -109,7 +140,7 @@ function CheckoutContent() {
       const response = await fetch('/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code }),
+        body: JSON.stringify({ email, code: codeString }),
       });
 
       const data = await response.json();
@@ -247,7 +278,7 @@ function CheckoutContent() {
                 size="sm"
                 onClick={() => {
                   setStep('email');
-                  setCode('');
+                  setCode(['', '', '', '', '', '']);
                   setErrorMessage('');
                 }}
               >
@@ -264,35 +295,32 @@ function CheckoutContent() {
               </p>
             </div>
 
-            <form onSubmit={handleCodeSubmit} className="space-y-4">
-              <Input
-                type="text"
-                inputMode="numeric"
-                maxLength={6}
-                value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-                placeholder="000000"
-                className="text-center text-2xl tracking-widest"
-                disabled={status === 'loading'}
-              />
+            <div className="flex justify-center gap-2 mb-4" onPaste={handlePaste}>
+              {code.map((digit, index) => (
+                <input
+                  key={index}
+                  ref={(el) => { inputRefs.current[index] = el; }}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleCodeChange(index, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(index, e)}
+                  disabled={status === 'loading'}
+                  className="w-12 h-14 text-center text-xl font-bold border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50"
+                />
+              ))}
+            </div>
 
-              {status === 'error' && (
-                <p className="text-sm text-destructive">{errorMessage}</p>
-              )}
+            {status === 'error' && (
+              <p className="text-sm text-destructive text-center mb-4">{errorMessage}</p>
+            )}
 
-              <Button
-                type="submit"
-                disabled={status === 'loading' || code.length !== 6}
-                className="w-full"
-                size="lg"
-              >
-                {status === 'loading' ? (
-                  <SpinnerGap className="w-5 h-5 animate-spin" />
-                ) : (
-                  'Verify & Continue'
-                )}
-              </Button>
-            </form>
+            {status === 'loading' && (
+              <div className="flex justify-center mb-4">
+                <SpinnerGap className="w-6 h-6 text-primary animate-spin" />
+              </div>
+            )}
           </>
         )}
 
