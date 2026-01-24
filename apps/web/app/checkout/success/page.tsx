@@ -42,7 +42,7 @@ export default function CheckoutSuccess() {
           Your credits have been added to your account.
         </p>
         <p className="text-sm text-muted-foreground">
-          Return to the Booking.com tab and refresh the page to see your full analysis.
+          You're all set. Install the DoNotStay extension, then open any hotel on Booking.com to start analyzing.
         </p>
       </div>
     </div>
