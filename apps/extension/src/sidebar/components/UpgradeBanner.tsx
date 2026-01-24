@@ -172,7 +172,7 @@ function UpgradeBanner() {
             You now have {newCreditBalance} checks available.
           </p>
         )}
-        <p className="text-xs text-muted-foreground mt-2">
+        <p className="text-sm text-muted-foreground mt-2">
           Refresh the page to see full analysis.
         </p>
       </div>
