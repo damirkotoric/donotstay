@@ -15,13 +15,13 @@ export default function SupportPage() {
 
       <h2>Contact Us</h2>
       <p>
-        For any questions, issues, or feedback, please email us at{' '}
+        For any questions, issues, or feedback, please email at{' '}
         <a href="mailto:mail@donotstay.app" className="text-primary hover:underline">
           mail@donotstay.app
         </a>
       </p>
       <p>
-        We aim to respond to all inquiries within 24 hours.
+        I aim to respond to all inquiries within 24 hours.
       </p>
     </StandardPageLayout>
   );

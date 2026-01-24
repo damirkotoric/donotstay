@@ -293,6 +293,12 @@ export default function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleEmailSubmit(e as unknown as React.FormEvent);
+                    }
+                  }}
                   placeholder="you@example.com"
                   disabled={status === 'loading'}
                   className="w-full h-12 px-4 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent disabled:opacity-50"

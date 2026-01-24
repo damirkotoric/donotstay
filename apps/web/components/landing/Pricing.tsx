@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, Star } from '@phosphor-icons/react';
+import { Check } from '@phosphor-icons/react';
 import { siteConfig } from '@/lib/config';
 import { Button } from '@/components/ui/button';
 
@@ -72,13 +72,12 @@ export function Pricing() {
               key={pack.key}
               className={`relative flex flex-col rounded-2xl p-8 ${
                 pack.highlighted
-                  ? 'bg-gradient-to-br from-primary to-primary-dark text-white shadow-xl ring-4 ring-primary/20'
+                  ? 'bg-gradient-to-br from-primary to-[oklch(from_var(--primary)_calc(l-0.15)_c_h)] text-white shadow-xl ring-4 ring-primary/20'
                   : 'border border-border bg-background'
               }`}
             >
               {pack.highlighted && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex items-center gap-1 rounded-full bg-background px-4 py-1 text-sm font-semibold text-primary shadow-md">
-                  <Star size={14} weight="fill" />
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex items-center gap-1 rounded-sm border border-primary bg-background px-4 py-1 text-sm font-semibold text-primary shadow-md">
                   Best Value
                 </div>
               )}

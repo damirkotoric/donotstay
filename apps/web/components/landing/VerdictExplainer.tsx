@@ -10,7 +10,7 @@ const verdicts = [
     bg: 'bg-verdict-stay-light',
     border: 'border-verdict-stay',
     shadow: 'shadow-lg shadow-verdict-stay/20',
-    description: 'No red flags. Book with confidence.',
+    description: 'No dealbreakers. Book confidently.',
   },
   {
     icon: Question,

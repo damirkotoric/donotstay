@@ -5,7 +5,7 @@ export const siteConfig = {
   tagline: 'Know which hotels to avoid before you book',
   chromeWebStoreUrl:
     process.env.NEXT_PUBLIC_CHROME_STORE_URL ||
-    'https://chrome.google.com/webstore/detail/donotstay/YOUR_EXTENSION_ID',
+    'https://chromewebstore.google.com/detail/donotstay/hpcibhenhfikfdlegphjecnhepomieea',
   pricing: {
     free: {
       name: 'Free',

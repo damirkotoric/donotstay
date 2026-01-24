@@ -24,6 +24,7 @@ export function Hero() {
     let opacityVelocity = 0;
     let frame: number;
     let hasStarted = false;
+    let isAnimating = false;
 
     const getScrollTarget = () => {
       if (!imageRef.current) return 20;
@@ -34,6 +35,8 @@ export function Hero() {
     };
 
     const animate = () => {
+      isAnimating = true;
+
       // Rotation spring
       const rotDisplacement = targetRotation - currentRotation;
       rotationVelocity += rotDisplacement * stiffness;
@@ -50,12 +53,26 @@ export function Hero() {
         setOpacity(currentOpacity);
       }
 
-      frame = requestAnimationFrame(animate);
+      // Stop animating once settled
+      const isSettled =
+        Math.abs(rotationVelocity) < 0.001 &&
+        Math.abs(rotDisplacement) < 0.01 &&
+        currentOpacity >= 0.999;
+
+      if (isSettled) {
+        isAnimating = false;
+      } else {
+        frame = requestAnimationFrame(animate);
+      }
     };
 
     const handleScroll = () => {
       if (!hasStarted) return;
       targetRotation = getScrollTarget();
+      // Restart animation if it stopped
+      if (!isAnimating) {
+        frame = requestAnimationFrame(animate);
+      }
     };
 
     // After delay: start both animations together, listen to scroll
@@ -112,7 +129,7 @@ export function Hero() {
         {/* Screenshot - full width below with 3D perspective */}
         <div ref={imageRef} className="relative mt-16 lg:mt-20" style={{ perspective: '2000px' }}>
           <div
-            className="overflow-hidden bg-gradient-to-br from-white to-muted rounded-xl shadow-2xl border p-2"
+            className="overflow-hidden bg-gradient-to-br from-white/10 to-muted rounded-xl shadow-2xl border p-2"
             style={{ transform: `rotateX(${rotation}deg)`, opacity }}
           >
             <div className="max-h-[800px] bg-white border rounded-lg overflow-hidden">

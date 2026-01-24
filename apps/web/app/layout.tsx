@@ -28,6 +28,14 @@ export const metadata: Metadata = {
     description:
       'Get instant AI verdicts on hotels before you book. Works on Booking.com.',
     type: 'website',
+    images: ['/social.jpg'],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'DoNotStay - AI Hotel Review Analysis',
+    description:
+      'Get instant AI verdicts on hotels before you book. Works on Booking.com.',
+    images: ['/social.jpg'],
   },
 };
 
@@ -50,7 +58,7 @@ export default function RootLayout({
           media="(prefers-color-scheme: dark)"
         />
       </head>
-      <body className="font-sans antialiased">
+      <body className="font-sans antialiased bg-background">
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

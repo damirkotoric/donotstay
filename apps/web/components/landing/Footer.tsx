@@ -9,7 +9,7 @@ export function Footer() {
         <div className="flex flex-col items-center justify-between gap-6 md:flex-row text-sm">
           <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8">
             <div className="">
-              &copy; {currentYear} DoNotStay. All rights reserved.
+              &copy; {currentYear} DoNotStay. Made by <a href="https://damirkotoric.com" target="_blank" className="underline hover:underline">Damir</a>.
             </div>
             <div className="flex gap-6">
               <a
