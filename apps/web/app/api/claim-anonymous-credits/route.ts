@@ -53,22 +53,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if this USER already claimed (one-time only, prevents reinstall exploit)
-    const { data: userClaim } = await supabase
-      .from('anonymous_claims')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (userClaim) {
-      // User already claimed - return success but don't add credits again
-      return NextResponse.json({
-        success: true,
-        already_claimed: true,
-        credits_added: 0,
-      }, { headers: corsHeaders });
-    }
-
     // Count how many anonymous checks this device has used
     const { count: checksUsed } = await supabase
       .from('anonymous_checks')
@@ -78,7 +62,35 @@ export async function POST(request: NextRequest) {
     // Calculate remaining anonymous credits
     const remainingAnonymous = Math.max(0, ANONYMOUS_TIER_LIMIT - (checksUsed || 0));
 
-    // Add remaining anonymous credits to user's account using atomic RPC
+    // Try to insert claim record FIRST (acts as a lock to prevent race conditions)
+    // If two requests come in simultaneously, only one will succeed in inserting
+    const { error: insertError } = await supabase
+      .from('anonymous_claims')
+      .insert({
+        device_id,
+        user_id: user.id,
+        credits_claimed: remainingAnonymous,
+      });
+
+    // If insert failed due to unique constraint, user already claimed
+    if (insertError) {
+      // Check if it's a unique violation (already claimed)
+      if (insertError.code === '23505') {
+        return NextResponse.json({
+          success: true,
+          already_claimed: true,
+          credits_added: 0,
+        }, { headers: corsHeaders });
+      }
+      // Some other error
+      console.error('Error inserting claim record:', insertError);
+      return NextResponse.json<ApiError>(
+        { error: 'Failed to claim credits', code: 'CLAIM_ERROR' },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    // Claim record inserted successfully - now add credits
     if (remainingAnonymous > 0) {
       const { error: rpcError } = await supabase.rpc('add_credits', {
         user_uuid: user.id,
@@ -87,21 +99,13 @@ export async function POST(request: NextRequest) {
 
       if (rpcError) {
         console.error('Error adding credits via RPC:', rpcError);
+        // Note: Claim record is already inserted, so user won't get double credits on retry
         return NextResponse.json<ApiError>(
           { error: 'Failed to add credits', code: 'CREDITS_ERROR' },
           { status: 500, headers: corsHeaders }
         );
       }
     }
-
-    // Record the claim to prevent double-claiming
-    await supabase
-      .from('anonymous_claims')
-      .insert({
-        device_id,
-        user_id: user.id,
-        credits_claimed: remainingAnonymous,
-      });
 
     return NextResponse.json({
       success: true,
