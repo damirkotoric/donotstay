@@ -26,7 +26,7 @@ export default function WelcomePage() {
           DoNotStay is now installed. Visit any hotel on Booking.com to get your first verdict.
         </p>
         <div className="flex flex-col gap-3">
-          <Button size="lg" asChild>
+          <Button size="lg" variant="outline" asChild>
             <a
               href="https://www.booking.com/hotel/jp/the-millennials-shibuya.html"
               target="_blank"
