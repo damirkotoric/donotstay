@@ -41,7 +41,7 @@ export default function CheckoutSuccess() {
         <p className="text-muted-foreground mb-4">
           Your credits have been added to your account.
         </p>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground">
           You're all set. Install the DoNotStay extension, then open any hotel on Booking.com to start analyzing.
         </p>
       </div>
