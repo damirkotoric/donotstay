@@ -27,6 +27,9 @@ export function injectButton(onClick: () => void): void {
   // Remove existing button if present
   removeButton();
 
+  const iframeUrl = getIframeUrl('src/button/index.html');
+  console.log('DoNotStay: Injecting button iframe with URL:', iframeUrl);
+
   // Create container
   buttonContainer = document.createElement('div');
   buttonContainer.id = 'donotstay-button-container';
@@ -34,10 +37,12 @@ export function injectButton(onClick: () => void): void {
   // Create iframe
   buttonIframe = document.createElement('iframe');
   buttonIframe.id = 'donotstay-button-iframe';
-  buttonIframe.src = getIframeUrl('src/button/index.html');
+  buttonIframe.src = iframeUrl;
 
   buttonContainer.appendChild(buttonIframe);
   document.body.appendChild(buttonContainer);
+
+  console.log('DoNotStay: Button container appended to body');
 
   // Listen for messages from button iframe
   window.addEventListener('message', handleButtonMessage);
@@ -58,11 +63,14 @@ function handleButtonMessage(event: MessageEvent): void {
  * Update button state
  */
 export function updateButton(payload: ButtonPayload): void {
+  console.log('DoNotStay: updateButton called with:', payload.state, 'buttonIframe:', !!buttonIframe, 'contentWindow:', !!buttonIframe?.contentWindow);
   if (buttonIframe?.contentWindow) {
     buttonIframe.contentWindow.postMessage(
       { type: 'DONOTSTAY_BUTTON_UPDATE', payload },
       '*'
     );
+  } else {
+    console.warn('DoNotStay: buttonIframe or contentWindow is null, cannot update button');
   }
 }
 

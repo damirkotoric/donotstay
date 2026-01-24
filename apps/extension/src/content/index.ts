@@ -75,9 +75,10 @@ function injectStyles() {
 }
 
 // State
+let initComplete = false; // Prevents button clicks until init finishes (cache check, etc.)
 let isAnalyzing = false;
 let currentVerdict: AnalyzeResponse | null = null;
-let _currentCreditsRemaining: number | undefined = undefined;
+let currentCreditsRemaining: number | undefined = undefined;
 
 // Prefetch state - populated on page load
 let prefetchedData: {
@@ -141,6 +142,12 @@ async function checkCachedVerdict() {
 
     if (response?.cached && response?.verdict_data) {
       console.log('DoNotStay: Found cached verdict for this hotel:', response.verdict_data.verdict);
+
+      // Don't update if user started analyzing while we were checking cache
+      if (isAnalyzing) {
+        console.log('DoNotStay: Skipping cached verdict - analysis in progress');
+        return;
+      }
 
       // Store the cached verdict so clicking button opens sidebar immediately
       const cachedVerdict: AnalyzeResponse = {
@@ -223,15 +230,24 @@ async function init() {
     checkCachedVerdict(),
   ]);
 
-  _currentCreditsRemaining = credits;
+  currentCreditsRemaining = credits;
 
   // Only show idle state if we don't already have a verdict from cache
-  if (!currentVerdict) {
+  // AND we're not currently analyzing (user may have clicked during init)
+  if (!currentVerdict && !isAnalyzing) {
     updateButton({ state: 'idle', credits_remaining: credits });
   }
+
+  // Mark init as complete - button clicks are now allowed
+  initComplete = true;
 }
 
 async function handleButtonClick() {
+  // Don't allow clicks until init completes (cache check, auth sync, etc.)
+  // This prevents users from starting a new analysis while we're still
+  // checking if there's a cached verdict
+  if (!initComplete) return;
+
   // If we already have a verdict, just open the sidebar
   if (currentVerdict) {
     showSidebar();
@@ -240,6 +256,10 @@ async function handleButtonClick() {
 
   if (isAnalyzing) return;
 
+  // Set analyzing flag IMMEDIATELY to prevent race conditions with
+  // credit update listeners or other async operations resetting to idle
+  isAnalyzing = true;
+
   // Update button to analyzing state (shows spinner)
   updateButton({ state: 'analyzing' });
 
@@ -247,9 +267,7 @@ async function handleButtonClick() {
 }
 
 async function analyzeHotel() {
-  if (isAnalyzing) return;
-  isAnalyzing = true;
-
+  // Note: isAnalyzing is set by handleButtonClick() before calling this function
   try {
     // Wait for prefetch if still in progress
     if (prefetchPromise) {
@@ -351,9 +369,10 @@ chrome.storage.onChanged.addListener((changes) => {
   if (changes.cachedCredits?.newValue !== undefined) {
     const newCredits = changes.cachedCredits.newValue;
     console.log('DoNotStay: Credits updated to', newCredits);
-    _currentCreditsRemaining = newCredits;
+    currentCreditsRemaining = newCredits;
     // Update button if in idle state (not analyzing or showing verdict)
-    if (!isAnalyzing && !currentVerdict) {
+    // Also wait for init to complete to avoid overwriting loading state
+    if (initComplete && !isAnalyzing && !currentVerdict) {
       updateButton({ state: 'idle', credits_remaining: newCredits });
     }
   }

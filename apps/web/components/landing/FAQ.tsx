@@ -9,11 +9,11 @@ const faqs = [
     answer:
       'Currently, DoNotStay works on Booking.com. Support for Airbnb and Expedia is coming soon.',
   },
-  {
-    question: 'How does it analyze reviews?',
-    answer:
-      'AI reads visible reviews and looks for patterns in noise, cleanliness, safety, location, and more. It identifies red flags and weighs them against positive feedback.',
-  },
+  // {
+  //   question: 'How does it analyze reviews?',
+  //   answer:
+  //     'AI reads visible reviews and looks for patterns in noise, cleanliness, safety, location, and more. It identifies red flags and weighs them against positive feedback.',
+  // },
   {
     question: 'Is my data stored?',
     answer:
@@ -22,13 +22,13 @@ const faqs = [
   {
     question: 'Can I get a refund?',
     answer:
-      'Yes, within 7 days of purchase, no questions asked. Contact mail@donotsay.app and we will process your refund.',
+      'Yes, within 7 days of purchase for unused credits. Contact mail@donotstay.app and we will process your refund.',
   },
-  {
-    question: 'What if the verdict is wrong?',
-    answer:
-      'Every verdict has a "Report inaccuracy" button. We take feedback seriously and use it to improve our AI.',
-  },
+  // {
+  //   question: 'What if the verdict is wrong?',
+  //   answer:
+  //     'Every verdict has a "Report inaccuracy" button. We take feedback seriously and use it to improve our AI.',
+  // },
 ];
 
 export function FAQ() {

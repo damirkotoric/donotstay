@@ -21,11 +21,8 @@ export function Footer() {
               <a href="/terms" className="font-medium">
                 Terms
               </a>
-              <a
-                href="mailto:mail@donotstay.app"
-                className="font-medium"
-              >
-                Contact
+              <a href="/support" className="font-medium">
+                Support
               </a>
             </div>
           </div>
