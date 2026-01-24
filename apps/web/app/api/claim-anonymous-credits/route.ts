@@ -78,27 +78,19 @@ export async function POST(request: NextRequest) {
     // Calculate remaining anonymous credits
     const remainingAnonymous = Math.max(0, ANONYMOUS_TIER_LIMIT - (checksUsed || 0));
 
-    // Add remaining anonymous credits to user's account
+    // Add remaining anonymous credits to user's account using atomic RPC
     if (remainingAnonymous > 0) {
-      const { error: updateError } = await supabase.rpc('increment_credits', {
-        user_id_param: user.id,
+      const { error: rpcError } = await supabase.rpc('add_credits', {
+        user_uuid: user.id,
         amount: remainingAnonymous,
       });
 
-      // If RPC doesn't exist, fall back to manual increment
-      if (updateError) {
-        const { data: userData } = await supabase
-          .from('users')
-          .select('credits_remaining')
-          .eq('id', user.id)
-          .single();
-
-        const newCredits = (userData?.credits_remaining || 0) + remainingAnonymous;
-
-        await supabase
-          .from('users')
-          .update({ credits_remaining: newCredits })
-          .eq('id', user.id);
+      if (rpcError) {
+        console.error('Error adding credits via RPC:', rpcError);
+        return NextResponse.json<ApiError>(
+          { error: 'Failed to add credits', code: 'CREDITS_ERROR' },
+          { status: 500, headers: corsHeaders }
+        );
       }
     }
 
