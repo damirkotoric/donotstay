@@ -55,7 +55,7 @@ export function Navbar() {
         <div
           className={`mx-auto max-w-[75rem] rounded-xl border transition-all duration-300 sm:px-6 ${
             isScrolled
-              ? 'border-border/50 bg-background/80 px-4 shadow-lg backdrop-blur-md'
+              ? 'border-border/50 bg-background/80 dark:bg-muted/60 px-4 shadow-lg backdrop-blur-md'
               : 'px-2 border-transparent bg-transparent'
           }`}
         >

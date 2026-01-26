@@ -10,9 +10,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'DoNotStay - Know Which Hotels to Avoid Before You Book',
+  title: 'DoNotStay - Know which hotels to avoid before you book',
   description:
-    'AI analyzes hotel reviews and gives you a verdict: Stay, Questionable, or Do Not Stay. Stop parsing 500 reviews. Get instant clarity.',
+    'AI analyzes hotel reviews and gives you a verdict: Stay, Questionable, or Do Not Stay. Stop reading reviews endlessly. Get instant clarity.',
   keywords: [
     'hotel reviews',
     'AI analysis',
@@ -25,18 +25,16 @@ export const metadata: Metadata = {
     apple: '/logo-donotstay.png',
   },
   openGraph: {
-    title: 'DoNotStay - AI Hotel Review Analysis',
+    title: 'DoNotStay - Know which hotels to avoid before you book',
     description:
-      'Get instant AI verdicts on hotels before you book. Works on Booking.com.',
-    type: 'website',
-    images: ['/social.jpg'],
+      'AI analyzes hotel reviews and gives you a verdict: Stay, Questionable, or Do Not Stay.',
+    // ...
   },
   twitter: {
-    card: 'summary_large_image',
-    title: 'DoNotStay - AI Hotel Review Analysis',
+    title: 'DoNotStay - Know which hotels to avoid before you book',
     description:
-      'Get instant AI verdicts on hotels before you book. Works on Booking.com.',
-    images: ['/social.jpg'],
+      'AI analyzes hotel reviews and gives you a verdict: Stay, Questionable, or Do Not Stay.',
+    // ...
   },
 };
 
