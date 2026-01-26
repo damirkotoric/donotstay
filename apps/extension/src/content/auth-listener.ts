@@ -40,7 +40,13 @@ window.addEventListener('message', (event) => {
 
 // Check localStorage for existing auth on page load
 // This syncs auth if user logged in before the extension was installed
+// Skip on logout page to avoid re-syncing token that's about to be cleared
 (async () => {
+  if (window.location.pathname === '/auth/logout') {
+    notifyAuthSyncComplete(false);
+    return;
+  }
+
   try {
     const stored = localStorage.getItem('donotstay_auth');
     if (stored) {

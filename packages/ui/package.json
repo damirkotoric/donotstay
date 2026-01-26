@@ -1,6 +1,6 @@
 {
   "name": "@donotstay/ui",
-  "version": "1.1.0",
+  "version": "1.1.2",
   "private": true,
   "sideEffects": [
     "*.css"

@@ -11,9 +11,7 @@ export default function LogoutPage() {
     localStorage.removeItem('donotstay_auth');
 
     // Post message for extension to clear its storage
-    window.postMessage({
-      type: 'DONOTSTAY_LOGOUT',
-    }, '*');
+    window.postMessage({ type: 'DONOTSTAY_LOGOUT' }, '*');
 
     setDone(true);
   }, []);
