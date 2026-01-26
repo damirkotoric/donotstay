@@ -7,13 +7,24 @@ export default function LogoutPage() {
   const [done, setDone] = useState(false);
 
   useEffect(() => {
-    // Clear web localStorage
-    localStorage.removeItem('donotstay_auth');
+    const logout = async () => {
+      // Clear web localStorage
+      localStorage.removeItem('donotstay_auth');
 
-    // Post message for extension to clear its storage
-    window.postMessage({ type: 'DONOTSTAY_LOGOUT' }, '*');
+      // Sign out from Supabase to invalidate session cookie
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+      } catch {
+        // Ignore errors - best effort
+      }
 
-    setDone(true);
+      // Post message for extension to clear its storage
+      window.postMessage({ type: 'DONOTSTAY_LOGOUT' }, '*');
+
+      setDone(true);
+    };
+
+    logout();
   }, []);
 
   return (
