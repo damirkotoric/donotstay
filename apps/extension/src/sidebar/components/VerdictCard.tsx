@@ -1,6 +1,6 @@
 import type { Verdict } from '@donotstay/shared';
 import { AnimatedCircularProgressBar } from '@donotstay/ui';
-import { ThumbsDown, ThumbsUp, Question } from '@phosphor-icons/react';
+import { ThumbsDown, ThumbsUp, HandPalm } from '@phosphor-icons/react';
 
 interface VerdictCardProps {
   verdict: Verdict;
@@ -56,7 +56,7 @@ function VerdictCard({ verdict, oneLiner, confidenceScore, reviewCount }: Verdic
             {verdict === 'Stay' ? (
               <ThumbsUp weight="bold" className="w-5 h-5 flex-shrink-0" />
             ) : verdict === 'Questionable' ? (
-              <Question weight="bold" className="w-5 h-5 flex-shrink-0" />
+              <HandPalm weight="bold" className="w-5 h-5 flex-shrink-0" />
             ) : (
               <ThumbsDown weight="bold" className="w-5 h-5 flex-shrink-0" />
             )}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@donotstay/ui';
-import { ThumbsUp, ThumbsDown, Question, Warning, Lock } from '@phosphor-icons/react';
+import { ThumbsUp, ThumbsDown, HandPalm, Warning, Lock } from '@phosphor-icons/react';
 
 type ButtonState = 'idle' | 'loading' | 'analyzing' | 'stay' | 'depends' | 'do_not_stay' | 'error' | 'rate_limited';
 
@@ -33,7 +33,7 @@ function App() {
       case 'stay':
         return ThumbsUp;
       case 'depends':
-        return Question;
+        return HandPalm;
       case 'do_not_stay':
         return ThumbsDown;
       case 'error':

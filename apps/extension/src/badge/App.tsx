@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@donotstay/ui';
-import { ThumbsUp, Question, ThumbsDown, Warning, Lock } from '@phosphor-icons/react';
+import { ThumbsUp, HandPalm, ThumbsDown, Warning, Lock } from '@phosphor-icons/react';
 
 type BadgeState = 'loading' | 'stay' | 'depends' | 'do_not_stay' | 'error' | 'rate_limited';
 
@@ -36,7 +36,7 @@ function App() {
       case 'stay':
         return ThumbsUp;
       case 'depends':
-        return Question;
+        return HandPalm;
       case 'do_not_stay':
         return ThumbsDown;
       case 'error':

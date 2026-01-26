@@ -1,6 +1,6 @@
 'use client';
 
-import { ThumbsUp, Question, ThumbsDown } from '@phosphor-icons/react';
+import { ThumbsUp, HandPalm, ThumbsDown } from '@phosphor-icons/react';
 
 const verdicts = [
   {
@@ -13,7 +13,7 @@ const verdicts = [
     description: 'No dealbreakers. Book confidently.',
   },
   {
-    icon: Question,
+    icon: HandPalm,
     verdict: 'Questionable',
     color: 'text-muted-foreground',
     bg: 'bg-muted',
