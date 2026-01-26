@@ -55,6 +55,13 @@ export default function PrivacyPage() {
         <li>Timestamps of analyses</li>
       </ul>
 
+      <h3>Website Analytics</h3>
+      <p>
+        We use Vercel Analytics on our website to understand how visitors use our site.
+        This collects anonymous page view data and does not track you across other
+        websites. No personal information or cookies are used for analytics.
+      </p>
+
       <h3>Anonymous Users</h3>
       <p>
         If you use the extension without an account, we generate a random device
@@ -95,12 +102,13 @@ export default function PrivacyPage() {
           <strong>Supabase:</strong> Hosts our database and authentication services.
         </li>
         <li>
-          <strong>Vercel:</strong> Hosts our website and API.
+          <strong>Vercel:</strong> Hosts our website and API. We use Vercel Analytics
+          to collect anonymous website traffic data (page views, no personal information).
         </li>
       </ul>
       <p>
         We do not sell your personal information to third parties. We do not use
-        third-party analytics or advertising services.
+        advertising services or cross-site tracking.
       </p>
 
       <h2>5. Data Retention</h2>
@@ -177,7 +185,7 @@ export default function PrivacyPage() {
         history or data on other websites.
       </p>
 
-      <h2>9. Cookies</h2>
+      <h2>9. Cookies and Local Storage</h2>
       <p>We use a single essential cookie:</p>
       <ul>
         <li>
@@ -185,7 +193,12 @@ export default function PrivacyPage() {
           expiry). This cookie is required for the extension to sync your login status.
         </li>
       </ul>
-      <p>We do not use analytics, advertising, or tracking cookies.</p>
+      <p>
+        Vercel Analytics uses browser local storage (not cookies) to collect anonymous
+        page view data. This data is not linked to your identity and does not track you
+        across other websites.
+      </p>
+      <p>We do not use advertising or cross-site tracking cookies.</p>
 
       <h2>10. Children&apos;s Privacy</h2>
       <p>
