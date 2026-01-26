@@ -27,6 +27,15 @@ window.addEventListener('message', (event) => {
       notifyAuthSyncComplete(true);
     });
   }
+
+  if (event.data?.type === 'DONOTSTAY_LOGOUT') {
+    // Clear extension storage
+    chrome.runtime.sendMessage({
+      type: 'CLEAR_AUTH_TOKEN',
+    }).then(() => {
+      console.log('DoNotStay: Auth token cleared via logout');
+    });
+  }
 });
 
 // Check localStorage for existing auth on page load

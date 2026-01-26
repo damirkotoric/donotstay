@@ -26,6 +26,10 @@ interface StoreAuthTokenMessage {
   token: string;
 }
 
+interface ClearAuthTokenMessage {
+  type: 'CLEAR_AUTH_TOKEN';
+}
+
 interface CreateCheckoutMessage {
   type: 'CREATE_CHECKOUT';
   pack_type: CreditPackType;
@@ -39,7 +43,7 @@ interface Message {
   type: string;
 }
 
-type ExtensionMessage = AnalyzeMessage | GetAuthMessage | CheckCacheMessage | GetAnonymousChecksMessage | StoreAuthTokenMessage | CreateCheckoutMessage | SyncAuthFromWebMessage | Message;
+type ExtensionMessage = AnalyzeMessage | GetAuthMessage | CheckCacheMessage | GetAnonymousChecksMessage | StoreAuthTokenMessage | ClearAuthTokenMessage | CreateCheckoutMessage | SyncAuthFromWebMessage | Message;
 
 interface CheckCacheResponse {
   cached: boolean;
@@ -99,6 +103,14 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
       await claimAnonymousCredits(authMessage.token);
       sendResponse({ success: true });
     })();
+    return true;
+  }
+
+  if (message.type === 'CLEAR_AUTH_TOKEN') {
+    chrome.storage.local.remove(['authToken', 'cachedCredits'], () => {
+      console.log('DoNotStay: Auth token cleared');
+      sendResponse({ success: true });
+    });
     return true;
   }
 
