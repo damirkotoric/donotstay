@@ -10,6 +10,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://donotstay.com'),
   title: 'DoNotStay - Know which hotels to avoid before you book',
   description:
     'AI analyzes hotel reviews and gives you a verdict: Stay, Questionable, or Do Not Stay. Stop reading reviews endlessly. Get instant clarity.',
@@ -28,13 +29,15 @@ export const metadata: Metadata = {
     title: 'DoNotStay - Know which hotels to avoid before you book',
     description:
       'AI analyzes hotel reviews and gives you a verdict: Stay, Questionable, or Do Not Stay.',
-    // ...
+    type: 'website',
+    images: ['/social.jpg'],
   },
   twitter: {
+    card: 'summary_large_image',
     title: 'DoNotStay - Know which hotels to avoid before you book',
     description:
       'AI analyzes hotel reviews and gives you a verdict: Stay, Questionable, or Do Not Stay.',
-    // ...
+    images: ['/social.jpg'],
   },
 };
 
