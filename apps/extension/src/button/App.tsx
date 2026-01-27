@@ -13,7 +13,6 @@ interface ButtonData {
 const LOADING_MESSAGES = [
   'Loading...',
   'Checking...',
-  'Snooping...',
   'Peeking...',
   'Judging...',
   'Scanning...',
@@ -41,7 +40,7 @@ function App() {
       setLoadingMessageIndex(0); // Reset to "Loading..." when entering analyzing state
       const interval = setInterval(() => {
         setLoadingMessageIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
-      }, 2000); // Change every 2 seconds
+      }, 4000); // Change every 4 seconds
 
       return () => clearInterval(interval);
     }

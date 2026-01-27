@@ -15,8 +15,8 @@ const verdicts = [
   {
     icon: HandPalm,
     verdict: 'Questionable',
-    color: 'text-muted-foreground',
-    bg: 'bg-muted',
+    color: 'text-verdict-depends',
+    bg: 'bg-verdict-depends-light',
     border: 'border-border',
     shadow: '',
     description: 'Trade-offs exist. Check the details.',

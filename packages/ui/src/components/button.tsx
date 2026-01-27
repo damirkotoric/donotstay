@@ -24,7 +24,7 @@ const buttonVariants = cva(
           "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
         link: "text-primary underline-offset-4 hover:underline",
         stay: "bg-verdict-stay text-white relative after:absolute after:inset-0 after:rounded-[inherit] after:pointer-events-none hover:after:bg-black/10 after:transition-colors [&>*]:relative [&>*]:z-10",
-        depends: "bg-verdict-depends text-white relative after:absolute after:inset-0 after:rounded-[inherit] after:pointer-events-none hover:after:bg-black/10 after:transition-colors [&>*]:relative [&>*]:z-10",
+        depends: "bg-verdict-depends-light text-verdict-depends border border-border relative after:absolute after:inset-0 after:rounded-[inherit] after:pointer-events-none hover:after:bg-black/5 after:transition-colors [&>*]:relative [&>*]:z-10",
         donotstay: "bg-verdict-donotstay text-white relative after:absolute after:inset-0 after:rounded-[inherit] after:pointer-events-none hover:after:bg-black/10 after:transition-colors [&>*]:relative [&>*]:z-10",
       },
       size: {
