@@ -4,6 +4,10 @@ import { injectButton, updateButton, type ButtonState } from './button';
 import { injectSidebar, showSidebar, hideSidebar, updateSidebar, setAuthSuccessCallback, setCreditsUpdatedCallback } from './sidebar';
 import type { AnalyzeResponse, ApiError, HotelInfo, ScrapedReview } from '@donotstay/shared';
 
+// Inline WEB_URL to avoid code splitting in content script
+declare const __DEV__: boolean;
+const WEB_URL = __DEV__ ? 'http://localhost:3000' : 'https://donotstay.app';
+
 // Sync auth from web session via background script API call
 // This auto-authenticates users who are logged in on the web (reinstalls, etc.)
 async function syncAuthFromWeb(): Promise<void> {
@@ -78,7 +82,6 @@ function injectStyles() {
 let initComplete = false; // Prevents button clicks until init finishes (cache check, etc.)
 let isAnalyzing = false;
 let currentVerdict: AnalyzeResponse | null = null;
-let currentCreditsRemaining: number | undefined = undefined;
 
 // Prefetch state - populated on page load
 let prefetchedData: {
@@ -230,12 +233,19 @@ async function init() {
     checkCachedVerdict(),
   ]);
 
-  currentCreditsRemaining = credits;
+  // Check if user is a returning user (has account) but not authenticated
+  const authStatus = await chrome.runtime.sendMessage({ type: 'GET_AUTH_STATUS' });
+  const hasAccount = await chrome.runtime.sendMessage({ type: 'HAS_ACCOUNT' });
 
   // Only show idle state if we don't already have a verdict from cache
   // AND we're not currently analyzing (user may have clicked during init)
   if (!currentVerdict && !isAnalyzing) {
-    updateButton({ state: 'idle', credits_remaining: credits });
+    // If returning user (has account) but not authenticated, show login prompt
+    if (hasAccount && !authStatus?.authenticated) {
+      updateButton({ state: 'rate_limited', message: 'Log in to DoNotStay', credits_remaining: 0 });
+    } else {
+      updateButton({ state: 'idle', credits_remaining: credits });
+    }
   }
 
   // Mark init as complete - button clicks are now allowed
@@ -247,6 +257,16 @@ async function handleButtonClick() {
   // This prevents users from starting a new analysis while we're still
   // checking if there's a cached verdict
   if (!initComplete) return;
+
+  // Check if returning user needs to log in
+  const authStatus = await chrome.runtime.sendMessage({ type: 'GET_AUTH_STATUS' });
+  const hasAccount = await chrome.runtime.sendMessage({ type: 'HAS_ACCOUNT' });
+
+  if (hasAccount && !authStatus?.authenticated) {
+    // Open auth page instead of analyzing
+    window.open(`${WEB_URL}/auth/login`, '_blank');
+    return;
+  }
 
   // If we already have a verdict, just open the sidebar
   if (currentVerdict) {
@@ -303,7 +323,11 @@ async function analyzeHotel() {
     if ('error' in response) {
       const error = response as ApiError;
 
-      if (error.code === 'RATE_LIMITED' || error.code === 'SIGNUP_REQUIRED' || error.code === 'NO_CREDITS') {
+      if (error.code === 'LOGIN_REQUIRED') {
+        updateButton({ state: 'rate_limited', message: 'Log in to DoNotStay', credits_remaining: 0 });
+        // Open auth page in new tab instead of showing sidebar
+        window.open(`${WEB_URL}/auth/login`, '_blank');
+      } else if (error.code === 'RATE_LIMITED' || error.code === 'SIGNUP_REQUIRED' || error.code === 'NO_CREDITS') {
         updateButton({ state: 'rate_limited', credits_remaining: 0 });
         updateSidebar({
           type: 'rate_limited',
@@ -369,7 +393,6 @@ chrome.storage.onChanged.addListener((changes) => {
   if (changes.cachedCredits?.newValue !== undefined) {
     const newCredits = changes.cachedCredits.newValue;
     console.log('DoNotStay: Credits updated to', newCredits);
-    currentCreditsRemaining = newCredits;
     // Update button if in idle state (not analyzing or showing verdict)
     // Also wait for init to complete to avoid overwriting loading state
     if (initComplete && !isAnalyzing && !currentVerdict) {

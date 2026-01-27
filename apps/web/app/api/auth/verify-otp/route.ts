@@ -37,10 +37,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify the OTP code
+    // Note: When using admin client with signInWithOtp, Supabase sends recovery OTPs
+    // (as evidenced by recovery_sent_at being populated in auth.users)
     const { data, error } = await supabase.auth.verifyOtp({
       email,
       token: code,
-      type: 'email',
+      type: 'recovery',
     });
 
     if (error || !data.session || !data.user) {

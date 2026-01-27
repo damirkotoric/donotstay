@@ -89,6 +89,13 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
     return true;
   }
 
+  if (message.type === 'HAS_ACCOUNT') {
+    hasAccount()
+      .then((result) => sendResponse(result))
+      .catch(() => sendResponse(false));
+    return true;
+  }
+
   if (message.type === 'STORE_AUTH_TOKEN') {
     const authMessage = message as StoreAuthTokenMessage;
     (async () => {
@@ -173,6 +180,17 @@ async function handleAnalyze(hotel: HotelInfo, reviews: ScrapedReview[]): Promis
     console.log(`DoNotStay: Sending ${reviews.length} reviews for analysis`);
 
     const authToken = await getStoredToken();
+    const userHasAccount = await hasAccount();
+
+    // Block anonymous checks for returning users
+    if (!authToken && userHasAccount) {
+      console.log('DoNotStay: User has account but not authenticated - login required');
+      return {
+        error: 'Please log in to continue',
+        code: 'LOGIN_REQUIRED',
+      };
+    }
+
     const anonymousId = authToken ? null : await getAnonymousId();
     const request: AnalyzeRequest = { hotel, reviews };
 
@@ -247,6 +265,17 @@ async function getStoredToken(): Promise<string | null> {
   return new Promise((resolve) => {
     chrome.storage.local.get(['authToken'], (result) => {
       resolve(result.authToken || null);
+    });
+  });
+}
+
+/**
+ * Check if user has previously created an account
+ */
+async function hasAccount(): Promise<boolean> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['donotstay_has_account'], (result) => {
+      resolve(!!result.donotstay_has_account);
     });
   });
 }

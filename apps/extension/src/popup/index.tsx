@@ -159,11 +159,6 @@ function Popup() {
               </div>
             ) : (
               <div className="flex flex-col items-center gap-3 text-center">
-                {authStatus.anonymous && (
-                  <div className="text-base font-semibold text-foreground">
-                    {authStatus.anonymous.checksRemaining} free {authStatus.anonymous.checksRemaining === 1 ? 'check' : 'checks'} remaining
-                  </div>
-                )}
                 {hasAccount ? (
                   <>
                     <p className="text-sm font-medium text-foreground">Welcome back</p>
@@ -179,6 +174,11 @@ function Popup() {
                   </>
                 ) : (
                   <>
+                    {authStatus.anonymous && (
+                      <div className="text-base font-semibold text-foreground">
+                        {authStatus.anonymous.checksRemaining} free {authStatus.anonymous.checksRemaining === 1 ? 'check' : 'checks'} remaining
+                      </div>
+                    )}
                     <p className="-mt-2 mb-2 text-sm text-muted-foreground">Get 10 more by creating an account</p>
                     <Button variant="secondary" className="w-full" onClick={handleSignIn}>
                       Sign Up Free

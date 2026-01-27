@@ -20,6 +20,10 @@ interface RateLimitedUpdate {
   tier?: UserTier;
 }
 
+interface LoginRequiredUpdate {
+  type: 'login_required';
+}
+
 interface ErrorUpdate {
   type: 'error';
   message: string;
@@ -29,7 +33,7 @@ interface LoadingUpdate {
   type: 'loading';
 }
 
-export type SidebarUpdate = VerdictUpdate | RateLimitedUpdate | ErrorUpdate | LoadingUpdate;
+export type SidebarUpdate = VerdictUpdate | RateLimitedUpdate | LoginRequiredUpdate | ErrorUpdate | LoadingUpdate;
 
 let sidebarContainer: HTMLElement | null = null;
 let sidebarIframe: HTMLIFrameElement | null = null;

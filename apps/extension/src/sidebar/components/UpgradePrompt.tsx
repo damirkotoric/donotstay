@@ -184,7 +184,7 @@ function UpgradePrompt({ rateLimit: _rateLimit, onCreditsUpdated }: UpgradePromp
       </div>
       <div className="text-xl font-bold text-foreground mb-2">Out of Credits</div>
       <div className="text-sm text-muted-foreground mb-6">
-        Get more credits to continue analyzing hotels.
+        Get more credits to continue checking hotels.
         <br />
         Credits never expire.
       </div>

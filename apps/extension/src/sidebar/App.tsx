@@ -10,11 +10,13 @@ import ErrorState from './components/ErrorState';
 import UpgradePrompt from './components/UpgradePrompt';
 import UpgradeBanner from './components/UpgradeBanner';
 import SignupPrompt from './components/SignupPrompt';
+import LoginPrompt from './components/LoginPrompt';
 
 type ViewState =
   | { type: 'loading' }
   | { type: 'verdict'; verdict: AnalyzeResponse }
   | { type: 'rate_limited'; rate_limit?: RateLimitInfo; tier?: 'anonymous' | 'authenticated' }
+  | { type: 'login_required' }
   | { type: 'error'; message: string };
 
 function App() {
@@ -44,6 +46,8 @@ function App() {
         {state.type === 'loading' && <LoadingState />}
 
         {state.type === 'error' && <ErrorState message={state.message} />}
+
+        {state.type === 'login_required' && <LoginPrompt />}
 
         {state.type === 'rate_limited' && (
           state.tier === 'anonymous' ? (

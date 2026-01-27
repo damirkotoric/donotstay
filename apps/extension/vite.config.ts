@@ -87,6 +87,14 @@ export default defineConfig(({ mode }) => {
           },
           chunkFileNames: 'assets/[name]-[hash].js',
           assetFileNames: 'assets/[name]-[hash].[ext]',
+          // Inline all shared dependencies into each output file
+          inlineDynamicImports: false,
+          manualChunks: (id) => {
+            // Group all node_modules into vendor chunk (except for content/background scripts)
+            if (id.includes('node_modules')) {
+              return 'vendor';
+            }
+          },
         },
       },
     },

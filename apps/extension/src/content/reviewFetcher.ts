@@ -19,6 +19,31 @@ function getDetailScore(review: ScrapedReview): number {
   return prosLength + consLength + textLength;
 }
 
+/**
+ * Stable sort for reviews when detail scores are equal
+ * Ensures deterministic selection across multiple runs
+ */
+function stableReviewSort(a: ScrapedReview, b: ScrapedReview): number {
+  // Primary: sort by score ascending (low scores first)
+  if (a.score !== b.score) return a.score - b.score;
+
+  // Secondary: sort by date descending (recent first)
+  if (a.date && b.date) {
+    const dateCompare = b.date.localeCompare(a.date);
+    if (dateCompare !== 0) return dateCompare;
+  }
+
+  // Tertiary: sort by author alphabetically
+  if (a.author && b.author) {
+    return a.author.localeCompare(b.author);
+  }
+
+  // Final tie-breaker: review text
+  const aText = (a.pros || '') + (a.cons || '');
+  const bText = (b.pros || '') + (b.cons || '');
+  return aText.localeCompare(bText);
+}
+
 interface GraphQLReview {
   id: string;
   countryCode?: string;
@@ -137,7 +162,10 @@ async function tryGraphQL(params: GraphQLParams): Promise<ScrapedReview[]> {
     // 2. Take ~25% from high-scoring pool
     // 3. Fill rest from low-score and recent pools, prioritizing detail
 
-    const sortByDetail = (a: ScrapedReview, b: ScrapedReview) => getDetailScore(b) - getDetailScore(a);
+    const sortByDetail = (a: ScrapedReview, b: ScrapedReview) => {
+      const detailDiff = getDetailScore(b) - getDetailScore(a);
+      return detailDiff !== 0 ? detailDiff : stableReviewSort(a, b);
+    };
 
     lowScorePool.sort(sortByDetail);
     recentPool.sort(sortByDetail);
@@ -319,7 +347,10 @@ async function fetchReviewsViaHtml(countryCode: string): Promise<ScrapedReview[]
     console.log(`DoNotStay: Raw pools - Low: ${lowScorePool.length}, Recent: ${recentPool.length}, High: ${highScorePool.length}`);
 
     // Sort each pool by detail (longest reviews first)
-    const sortByDetail = (a: ScrapedReview, b: ScrapedReview) => getDetailScore(b) - getDetailScore(a);
+    const sortByDetail = (a: ScrapedReview, b: ScrapedReview) => {
+      const detailDiff = getDetailScore(b) - getDetailScore(a);
+      return detailDiff !== 0 ? detailDiff : stableReviewSort(a, b);
+    };
     lowScorePool.sort(sortByDetail);
     recentPool.sort(sortByDetail);
     highScorePool.sort(sortByDetail);

@@ -10,8 +10,19 @@ interface ButtonData {
   credits_remaining?: number;
 }
 
+const LOADING_MESSAGES = [
+  'Loading...',
+  'Checking...',
+  'Snooping...',
+  'Peeking...',
+  'Judging...',
+  'Scanning...',
+  'Vibing...',
+];
+
 function App() {
   const [data, setData] = useState<ButtonData>({ state: 'loading' });
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -23,6 +34,18 @@ function App() {
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, []);
+
+  // Rotate loading messages when analyzing
+  useEffect(() => {
+    if (data.state === 'analyzing') {
+      setLoadingMessageIndex(0); // Reset to "Loading..." when entering analyzing state
+      const interval = setInterval(() => {
+        setLoadingMessageIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
+      }, 2000); // Change every 2 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [data.state]);
 
   const handleClick = () => {
     window.parent.postMessage({ type: 'DONOTSTAY_BUTTON_CLICK' }, '*');
@@ -48,7 +71,7 @@ function App() {
   const getText = () => {
     switch (data.state) {
       case 'analyzing':
-        return 'Checking...';
+        return LOADING_MESSAGES[loadingMessageIndex];
       case 'stay':
         return 'Stay';
       case 'depends':
@@ -58,7 +81,7 @@ function App() {
       case 'error':
         return data.message || 'Error';
       case 'rate_limited':
-        return 'Get credits';
+        return data.message || 'Get credits';
       default:
         return 'Check';
     }
