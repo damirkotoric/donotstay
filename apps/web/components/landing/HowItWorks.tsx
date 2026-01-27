@@ -1,22 +1,25 @@
 'use client';
 
 import { PuzzlePiece, MagnifyingGlass, CheckCircle, CaretRight, CaretDown } from '@phosphor-icons/react';
+import { siteConfig } from '@/lib/config';
 
 const steps = [
   {
     icon: PuzzlePiece,
     title: 'Step 1: Install extension',
     description: 'Add DoNotStay via the Chrome Web Store.',
+    link: { text: 'Install now.', href: siteConfig.chromeWebStoreUrl },
   },
   {
     icon: MagnifyingGlass,
     title: '2. Browse hotel page',
-    description: 'Visit Booking.com hotel pages as you normally would.',
+    description: 'Visit any Booking.com hotel page as you normally would.',
+    link: { text: 'Try one.', href: siteConfig.exampleHotelUrl },
   },
   {
     icon: CheckCircle,
-    title: '3. Click for instant verdict',
-    description: "See what's wrong — and whether you should book.",
+    title: '3. Get instant verdict',
+    description: "Click \"Check\" to see what's wrong — and whether you should book.",
   },
 ];
 
@@ -35,7 +38,22 @@ export function HowItWorks() {
                   <h3 className="mb-2 text-lg font-semibold text-foreground">
                     {step.title}
                   </h3>
-                  <p className="text-sm text-muted-foreground">{step.description}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {step.description}
+                    {'link' in step && step.link && (
+                      <>
+                        {' '}
+                        <a
+                          href={step.link.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-medium text-foreground underline underline-offset-4 hover:text-foreground/80"
+                        >
+                          {step.link.text}
+                        </a>
+                      </>
+                    )}
+                  </p>
                 </div>
               </div>
               {index < steps.length - 1 && (

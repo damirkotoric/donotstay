@@ -6,6 +6,7 @@ export const siteConfig = {
   chromeWebStoreUrl:
     process.env.NEXT_PUBLIC_CHROME_STORE_URL ||
     'https://chromewebstore.google.com/detail/donotstay/hpcibhenhfikfdlegphjecnhepomieea',
+  exampleHotelUrl: 'https://www.booking.com/hotel/jp/wan-fu-lou.en-gb.html',
   pricing: {
     free: {
       name: 'Free',

@@ -33,7 +33,7 @@ function getSeverityStyles(severity: string) {
     case 'high':
       return 'bg-verdict-donotstay text-white';
     case 'medium':
-      return 'bg-verdict-depends text-foreground';
+      return 'bg-verdict-depends text-white';
     case 'low':
       return 'bg-muted text-muted-foreground';
     default:
