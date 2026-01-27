@@ -4,32 +4,36 @@ import { Check } from '@phosphor-icons/react';
 import { siteConfig } from '@/lib/config';
 import { Button } from '@/components/ui/button';
 
+function formatPricePerCheck(priceCents: number, credits: number): string {
+  const pricePerCheck = priceCents / 100 / credits;
+  return `$${pricePerCheck.toFixed(2)}`;
+}
+
+const { entry, standard, traveler } = siteConfig.pricing.creditPacks;
+
 const creditPacks = [
   {
     key: 'entry' as const,
     name: 'Entry Pack',
-    credits: siteConfig.pricing.creditPacks.entry.credits,
-    price: siteConfig.pricing.creditPacks.entry.priceDisplay,
-    pricePerCheck: '$0.67',
-    description: 'Try it out',
+    credits: entry.credits,
+    price: entry.priceDisplay,
+    pricePerCheck: formatPricePerCheck(entry.priceCents, entry.credits),
     highlighted: false,
   },
   {
     key: 'standard' as const,
     name: 'Standard Pack',
-    credits: siteConfig.pricing.creditPacks.standard.credits,
-    price: siteConfig.pricing.creditPacks.standard.priceDisplay,
-    pricePerCheck: '$0.40',
-    description: 'Popular',
+    credits: standard.credits,
+    price: standard.priceDisplay,
+    pricePerCheck: formatPricePerCheck(standard.priceCents, standard.credits),
     highlighted: false,
   },
   {
     key: 'traveler' as const,
     name: 'Traveler Pack',
-    credits: siteConfig.pricing.creditPacks.traveler.credits,
-    price: siteConfig.pricing.creditPacks.traveler.priceDisplay,
-    pricePerCheck: '$0.27',
-    description: 'For frequent travelers',
+    credits: traveler.credits,
+    price: traveler.priceDisplay,
+    pricePerCheck: formatPricePerCheck(traveler.priceCents, traveler.credits),
     highlighted: true,
   },
 ];
@@ -115,14 +119,6 @@ export function Pricing() {
                   ({pack.pricePerCheck}/check)
                 </span>
               </div>
-
-              <p
-                className={`mt-2 ${
-                  pack.highlighted ? 'text-white/80' : 'text-muted-foreground'
-                }`}
-              >
-                {pack.description}
-              </p>
 
               <ul className="mt-6 flex-1 space-y-3">
                 <li className="flex items-start gap-3">
