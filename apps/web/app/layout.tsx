@@ -10,7 +10,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://donotstay.com'),
+  metadataBase: new URL('https://donotstay.app'),
   title: 'DoNotStay - Know which hotels to avoid before you book',
   description:
     'AI analyzes hotel reviews and gives you a verdict: Stay, Questionable, or Do Not Stay. Stop reading reviews endlessly. Get instant clarity.',
