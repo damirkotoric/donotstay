@@ -65,9 +65,6 @@ export function Pricing() {
               Get {siteConfig.pricing.free.signupCredits} more checks if you create a free account
             </span>
           </div>
-          <p className="mt-4 text-sm text-muted-foreground">
-            Then, purchase credit packs as needed below.
-          </p>
         </div>
 
         <div className="grid items-stretch gap-6 md:grid-cols-3">

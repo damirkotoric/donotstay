@@ -26,7 +26,7 @@ const features = [
     icon: Quotes,
     title: 'Real Evidence',
     description:
-      'Every red flag links back to actual guest quotes. No AI guesswork.',
+      'Every red flag shows actual guest quotes. Facts only. No AI guesswork.',
   },
   {
     icon: Target,
@@ -44,7 +44,7 @@ const features = [
     icon: ShieldCheck,
     title: 'Privacy First',
     description:
-      'No tracking, no data selling. Your browsing stays private.',
+      'No targetted ads, no data selling. We only store what\'s needed to deliver your verdicts.',
   },
   {
     icon: Sparkle,
