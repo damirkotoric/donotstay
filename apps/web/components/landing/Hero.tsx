@@ -5,6 +5,7 @@ import { siteConfig } from '@/lib/config';
 import { FlipWords } from '@/components/ui/flip-words';
 import { BookingLogo } from '@/components/logos';
 import { Button } from '@/components/ui/button';
+import { ShineBorder } from '@donotstay/ui';
 
 const rotatingWords = ['mold', 'thin walls', 'rude staff', 'noise', 'bedbugs', 'weak AC'];
 
@@ -104,12 +105,18 @@ export function Hero() {
             We read the reviews. You get the verdict.
           </p>
           <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-            <Button variant="default" size="xl" asChild>
+            <Button variant="default" size="xl" asChild className="relative overflow-hidden">
               <a
                 href={siteConfig.chromeWebStoreUrl}
                 target="_blank"
                 rel="noopener noreferrer"
               >
+                <ShineBorder
+                  shineColor={["rgba(255,255,255,1)", "rgba(255,255,255,255)"]}
+                  borderWidth={2}
+                  duration={8}
+                  className="rounded-lg"
+                />
                 Add to Chrome — It&apos;s FREE
               </a>
             </Button>

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -35,7 +36,6 @@ summary {
   cursor: pointer;
 }
 
-
 @theme inline {
   /* Background gradient animation keyframes */
   --animate-first: moveVertical 30s ease infinite;
@@ -43,6 +43,7 @@ summary {
   --animate-third: moveInCircle 40s linear infinite;
   --animate-fourth: moveHorizontal 40s ease infinite;
   --animate-fifth: moveInCircle 20s ease infinite;
+  --animate-shine: shine var(--duration) infinite linear;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -206,3 +207,16 @@ summary {
     transform: translateY(-50%);
   }
 }
+
+@keyframes shine {
+  0% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
+  100% {
+    background-position: 0% 0%;
+  }
+}
+

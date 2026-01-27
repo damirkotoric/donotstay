@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Button } from '@donotstay/ui';
+import { Button, ShineBorder } from '@donotstay/ui';
 import { ThumbsUp, ThumbsDown, HandPalm, Warning, Lock } from '@phosphor-icons/react';
 
 type ButtonState = 'idle' | 'loading' | 'analyzing' | 'stay' | 'depends' | 'do_not_stay' | 'error' | 'rate_limited';
@@ -128,8 +128,16 @@ function App() {
         leadingIcon={getIcon()}
         iconWeight="bold"
         variant={getVariant()}
-        className="shadow-lg disabled:opacity-100"
+        className="relative overflow-hidden shadow-lg disabled:opacity-100"
       >
+        {isIdle && (
+          <ShineBorder
+            shineColor={["var(--color-verdict-stay)", "var(--color-verdict-donotstay)"]}
+            borderWidth={1}
+            duration={8}
+            className="rounded-sm"
+          />
+        )}
         {isIdle && (
           <div className="relative size-5">
             <ThumbsDown weight="fill" className="absolute bottom-0 right-0 size-3.5 text-verdict-donotstay" />

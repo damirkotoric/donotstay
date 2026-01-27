@@ -6,6 +6,7 @@ export type { ButtonProps } from './components/button'
 export { CreditPackOption } from './components/credit-pack-option'
 export type { CreditPackOptionProps } from './components/credit-pack-option'
 export { Input } from './components/input'
+export { ShineBorder } from './components/shine-border'
 
 // Utilities
 export { cn } from './lib/utils'
