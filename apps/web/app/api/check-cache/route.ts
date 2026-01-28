@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
         red_flags: cached.red_flags,
         avoid_if_you_are: cached.avoid_if_you_are,
         bottom_line: cached.bottom_line,
-        review_count_analyzed: 0,
+        review_count_analyzed: cached.review_count,
         cached: true,
       };
 

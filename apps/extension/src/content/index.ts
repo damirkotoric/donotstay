@@ -1,7 +1,7 @@
 import { scrapeHotelInfo, scrapeGraphQLParams } from './scraper';
 import { fetchReviewsViaGraphQL } from './reviewFetcher';
 import { injectButton, updateButton, type ButtonState } from './button';
-import { injectSidebar, showSidebar, hideSidebar, updateSidebar, setAuthSuccessCallback, setCreditsUpdatedCallback } from './sidebar';
+import { injectSidebar, showSidebar, hideSidebar, updateSidebar, setAuthSuccessCallback, setCreditsUpdatedCallback, setRetryCallback } from './sidebar';
 import type { AnalyzeResponse, ApiError, HotelInfo, ScrapedReview } from '@donotstay/shared';
 
 // Inline WEB_URL to avoid code splitting in content script
@@ -82,6 +82,7 @@ function injectStyles() {
 let initComplete = false; // Prevents button clicks until init finishes (cache check, etc.)
 let isAnalyzing = false;
 let currentVerdict: AnalyzeResponse | null = null;
+let currentError: string | null = null;
 
 // Prefetch state - populated on page load
 let prefetchedData: {
@@ -90,6 +91,10 @@ let prefetchedData: {
 } | null = null;
 let prefetchPromise: Promise<void> | null = null;
 let prefetchError: string | null = null;
+
+// Cached auth state from init() - avoids redundant network calls on button click
+let cachedAuthStatus: { authenticated: boolean } | null = null;
+let cachedHasAccount = false;
 
 // Prefetch hotel data and reviews on page load
 async function prefetchData() {
@@ -191,13 +196,26 @@ async function fetchCreditsRemaining(): Promise<number | undefined> {
 // Handle successful authentication - trigger re-analysis
 function handleAuthSuccess() {
   console.log('DoNotStay: handleAuthSuccess called');
-  // Clear current verdict so we re-analyze with auth
+  // Update cached auth state (user is now authenticated)
+  cachedAuthStatus = { authenticated: true };
+  cachedHasAccount = true;
+  // Clear current state so we re-analyze with auth
   currentVerdict = null;
+  currentError = null;
   console.log('DoNotStay: Sending loading state to sidebar');
   // Update sidebar to show loading state
   updateSidebar({ type: 'loading' });
   console.log('DoNotStay: Calling handleButtonClick');
   // Trigger analysis
+  handleButtonClick();
+}
+
+// Handle retry from error state - clear error and re-analyze
+function handleRetry() {
+  console.log('DoNotStay: handleRetry called');
+  currentError = null;
+  currentVerdict = null;
+  updateSidebar({ type: 'loading' });
   handleButtonClick();
 }
 
@@ -217,6 +235,9 @@ async function init() {
   // Set up credits updated callback (reuses same logic as auth success)
   setCreditsUpdatedCallback(handleAuthSuccess);
 
+  // Set up retry callback for error state
+  setRetryCallback(handleRetry);
+
   // Inject button to trigger analysis (starts in loading state)
   injectButton(handleButtonClick);
 
@@ -234,14 +255,15 @@ async function init() {
   ]);
 
   // Check if user is a returning user (has account) but not authenticated
-  const authStatus = await chrome.runtime.sendMessage({ type: 'GET_AUTH_STATUS' });
-  const hasAccount = await chrome.runtime.sendMessage({ type: 'HAS_ACCOUNT' });
+  // Cache these values to avoid redundant network calls on button click
+  cachedAuthStatus = await chrome.runtime.sendMessage({ type: 'GET_AUTH_STATUS' });
+  cachedHasAccount = await chrome.runtime.sendMessage({ type: 'HAS_ACCOUNT' });
 
   // Only show idle state if we don't already have a verdict from cache
   // AND we're not currently analyzing (user may have clicked during init)
   if (!currentVerdict && !isAnalyzing) {
     // If returning user (has account) but not authenticated, show login prompt
-    if (hasAccount && !authStatus?.authenticated) {
+    if (cachedHasAccount && !cachedAuthStatus?.authenticated) {
       updateButton({ state: 'rate_limited', message: 'Log in to DoNotStay', credits_remaining: 0 });
     } else {
       updateButton({ state: 'idle', credits_remaining: credits });
@@ -258,13 +280,16 @@ async function handleButtonClick() {
   // checking if there's a cached verdict
   if (!initComplete) return;
 
-  // Check if returning user needs to log in
-  const authStatus = await chrome.runtime.sendMessage({ type: 'GET_AUTH_STATUS' });
-  const hasAccount = await chrome.runtime.sendMessage({ type: 'HAS_ACCOUNT' });
-
-  if (hasAccount && !authStatus?.authenticated) {
+  // Check if returning user needs to log in (using cached values from init)
+  if (cachedHasAccount && !cachedAuthStatus?.authenticated) {
     // Open auth page instead of analyzing
     window.open(`${WEB_URL}/auth/login`, '_blank');
+    return;
+  }
+
+  // If we have an error, show the sidebar with error message
+  if (currentError) {
+    showSidebar();
     return;
   }
 
@@ -296,7 +321,10 @@ async function analyzeHotel() {
 
     // Use prefetched data or show specific error
     if (!prefetchedData) {
-      updateButton({ state: 'error', message: prefetchError || 'Could not load hotel data' });
+      currentError = prefetchError || 'Could not load hotel data';
+      updateButton({ state: 'error', message: 'Error' });
+      updateSidebar({ type: 'error', message: currentError });
+      showSidebar();
       return;
     }
 
@@ -315,7 +343,10 @@ async function analyzeHotel() {
 
     // Handle null/undefined response
     if (!response) {
-      updateButton({ state: 'error', message: 'No response from API' });
+      currentError = 'No response from API';
+      updateButton({ state: 'error', message: 'Error' });
+      updateSidebar({ type: 'error', message: currentError });
+      showSidebar();
       return;
     }
 
@@ -337,16 +368,21 @@ async function analyzeHotel() {
         // Automatically open sidebar to show rate limit / signup / purchase info
         showSidebar();
       } else if (error.code === 'NO_REVIEWS') {
-        updateButton({ state: 'error', message: 'No reviews found' });
-        updateSidebar({ type: 'error', message: 'No reviews found for this hotel' });
+        currentError = 'No reviews found for this hotel';
+        updateButton({ state: 'error', message: 'Error' });
+        updateSidebar({ type: 'error', message: currentError });
+        showSidebar();
       } else {
-        updateButton({ state: 'error', message: error.error });
+        currentError = error.error;
+        updateButton({ state: 'error', message: 'Error' });
         updateSidebar({ type: 'error', message: error.error });
+        showSidebar();
       }
       return;
     }
 
-    // Success - update button with verdict
+    // Success - clear any previous error and update button with verdict
+    currentError = null;
     currentVerdict = response as AnalyzeResponse;
 
     const verdictState = getVerdictState(currentVerdict.verdict);
@@ -357,8 +393,10 @@ async function analyzeHotel() {
     showSidebar();
   } catch (error) {
     console.error('DoNotStay: Analysis error', error);
-    updateButton({ state: 'error', message: 'Something went wrong' });
-    updateSidebar({ type: 'error', message: 'Something went wrong. Please try again.' });
+    currentError = 'Something went wrong. Please try again.';
+    updateButton({ state: 'error', message: 'Error' });
+    updateSidebar({ type: 'error', message: currentError });
+    showSidebar();
   } finally {
     isAnalyzing = false;
   }
@@ -393,9 +431,9 @@ chrome.storage.onChanged.addListener((changes) => {
   if (changes.cachedCredits?.newValue !== undefined) {
     const newCredits = changes.cachedCredits.newValue;
     console.log('DoNotStay: Credits updated to', newCredits);
-    // Update button if in idle state (not analyzing or showing verdict)
+    // Update button if in idle state (not analyzing, showing verdict, or showing error)
     // Also wait for init to complete to avoid overwriting loading state
-    if (initComplete && !isAnalyzing && !currentVerdict) {
+    if (initComplete && !isAnalyzing && !currentVerdict && !currentError) {
       updateButton({ state: 'idle', credits_remaining: newCredits });
     }
   }

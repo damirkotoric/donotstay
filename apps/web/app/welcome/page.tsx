@@ -32,7 +32,7 @@ export default function WelcomePage() {
           loop
           muted
           playsInline
-          className="rounded-lg mb-6 border"
+          className="rounded-lg mb-6 border w-full bg-muted aspect-video"
         />
         <div className="flex flex-col gap-3">
           <Button size="lg" variant="outline" asChild>

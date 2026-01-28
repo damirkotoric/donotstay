@@ -64,6 +64,13 @@ export function setCreditsUpdatedCallback(callback: () => void): void {
   creditsUpdatedCallback = callback;
 }
 
+// Callback for when user clicks retry in error state
+let retryCallback: (() => void) | null = null;
+
+export function setRetryCallback(callback: () => void): void {
+  retryCallback = callback;
+}
+
 // Handle messages from sidebar iframe
 function handleSidebarMessage(event: MessageEvent): void {
   if (event.data?.type === 'DONOTSTAY_SIDEBAR_READY') {
@@ -109,6 +116,15 @@ function handleSidebarMessage(event: MessageEvent): void {
     hideSidebar();
     if (creditsUpdatedCallback) {
       creditsUpdatedCallback();
+    }
+  }
+
+  // Handle retry from error state
+  if (event.data?.type === 'RETRY_ANALYSIS') {
+    console.log('DoNotStay: Retry analysis requested');
+    hideSidebar();
+    if (retryCallback) {
+      retryCallback();
     }
   }
 }
